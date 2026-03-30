@@ -1,0 +1,100 @@
+package com.example.controller;
+
+import com.example.dto.*;
+import com.example.entity.FinanceRecord;
+import com.example.service.FinanceRecordService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/finance")
+@RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"})
+public class FinanceController {
+
+    private final FinanceRecordService financeRecordService;
+
+    @GetMapping
+    public ResponseEntity<PageResponse<FinanceRecordDTO>> getFinanceRecords(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "recordDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Sort sort = Sort.by(sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+        Page<FinanceRecord> recordPage = financeRecordService.getFinanceRecords(type, startDate, endDate, pageRequest);
+
+        PageResponse<FinanceRecordDTO> response = PageResponse.<FinanceRecordDTO>builder()
+                .content(recordPage.getContent().stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList()))
+                .totalPages(recordPage.getTotalPages())
+                .totalElements(recordPage.getTotalElements())
+                .size(recordPage.getSize())
+                .number(recordPage.getNumber())
+                .first(recordPage.isFirst())
+                .last(recordPage.isLast())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<FinanceRecordDTO> getFinanceRecordById(@PathVariable UUID id) {
+        FinanceRecord record = financeRecordService.getFinanceRecordById(id);
+        return ResponseEntity.ok(convertToDTO(record));
+    }
+
+    @PostMapping
+    public ResponseEntity<Map<String, String>> createFinanceRecord(@Valid @RequestBody CreateFinanceRecordRequest request) {
+        financeRecordService.createFinanceRecord(request);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "财务记录创建成功");
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, String>> updateFinanceRecord(@PathVariable UUID id, @Valid @RequestBody UpdateFinanceRecordRequest request) {
+        financeRecordService.updateFinanceRecord(id, request);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "财务记录更新成功");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteFinanceRecord(@PathVariable UUID id) {
+        financeRecordService.deleteFinanceRecord(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "财务记录删除成功");
+        return ResponseEntity.ok(response);
+    }
+
+    private FinanceRecordDTO convertToDTO(FinanceRecord record) {
+        return FinanceRecordDTO.builder()
+                .id(record.getId())
+                .recordDate(record.getRecordDate())
+                .amount(record.getAmount())
+                .type(record.getType())
+                .remark(record.getRemark())
+                .createdAt(record.getCreatedAt())
+                .updatedAt(record.getUpdatedAt())
+                .build();
+    }
+}

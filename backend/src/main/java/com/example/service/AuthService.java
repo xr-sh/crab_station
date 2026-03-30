@@ -43,8 +43,8 @@ public class AuthService {
             User user = userRepository.findByUsername(loginRequest.getUsername())
                     .orElseThrow(() -> new BadCredentialsException("User not found"));
 
-            user.setLastLoginTime(LocalDateTime.now());
-            userRepository.save(user);
+            // 使用自定义更新方法，避免 Hibernate 的状态检测问题
+            userRepository.updateLastLoginTime(user.getId(), LocalDateTime.now());
 
             return LoginResponse.builder()
                     .token(jwt)

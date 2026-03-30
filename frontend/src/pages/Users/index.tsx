@@ -4,7 +4,6 @@ import {
   Button,
   Input,
   Space,
-  Tag,
   Popconfirm,
   message,
   Card,
@@ -70,7 +69,7 @@ const Users: React.FC = () => {
     fetchUsers(0, pagination.pageSize, keyword)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await userApi.deleteUser(id)
       message.success('删除成功')
@@ -80,7 +79,7 @@ const Users: React.FC = () => {
     }
   }
 
-  const handleStatusChange = async (id: number, checked: boolean) => {
+  const handleStatusChange = async (id: string, checked: boolean) => {
     try {
       await userApi.updateUserStatus(id, checked ? 1 : 0)
       message.success('状态更新成功')
@@ -106,12 +105,6 @@ const Users: React.FC = () => {
   }
 
   const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-    },
     {
       title: '用户名',
       dataIndex: 'username',

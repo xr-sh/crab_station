@@ -1,7 +1,7 @@
 import request from './request'
 
 export interface User {
-  id: number
+  id: string
   username: string
   email: string
   phone: string
@@ -52,7 +52,7 @@ export const userApi = {
   },
 
   // 获取单个用户
-  getUserById: (id: number) => {
+  getUserById: (id: string) => {
     return request.get<User>(`/users/${id}`)
   },
 
@@ -62,17 +62,17 @@ export const userApi = {
   },
 
   // 更新用户
-  updateUser: (id: number, data: UpdateUserRequest) => {
+  updateUser: (id: string, data: UpdateUserRequest) => {
     return request.put(`/users/${id}`, data)
   },
 
   // 删除用户
-  deleteUser: (id: number) => {
+  deleteUser: (id: string) => {
     return request.delete(`/users/${id}`)
   },
 
   // 更新用户状态
-  updateUserStatus: (id: number, status: number) => {
+  updateUserStatus: (id: string, status: number) => {
     return request.patch(`/users/${id}/status?status=${status}`)
   },
 }

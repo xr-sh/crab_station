@@ -5,6 +5,11 @@ import zhCN from 'antd/locale/zh_CN'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Users from './pages/Users'
+import Finance from './pages/Finance'
+import Purchase from './pages/Purchase'
+import PurchaseSpec from './pages/PurchaseSpec'
+import PlatformSpec from './pages/PlatformSpec'
+import SpecificationMapping from './pages/SpecificationMapping'
 import PrivateRoute from './components/PrivateRoute'
 import MainLayout from './components/MainLayout'
 
@@ -24,6 +29,11 @@ const App: React.FC = () => {
           >
             <Route index element={<Home />} />
             <Route path="users" element={<Users />} />
+            <Route path="finance" element={<Finance />} />
+            <Route path="purchase" element={<Purchase />} />
+            <Route path="purchase-spec" element={<PurchaseSpec />} />
+            <Route path="platform-spec" element={<PlatformSpec />} />
+            <Route path="specification-mapping" element={<SpecificationMapping />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

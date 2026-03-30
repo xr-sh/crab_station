@@ -16,6 +16,12 @@ import {
   HomeOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  DollarOutlined,
+  ShoppingCartOutlined,
+  AppstoreOutlined,
+  ProfileOutlined,
+  ShopOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -29,6 +35,26 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuthStore()
+
+  // 获取当前选中的菜单键
+  const getSelectedKeys = () => {
+    const path = location.pathname
+    if (['/purchase-spec', '/platform-spec', '/specification-mapping'].includes(path)) {
+      return [path]
+    }
+    return [path]
+  }
+
+  // 获取展开的子菜单键
+  const getOpenKeys = () => {
+    const path = location.pathname
+    if (['/purchase-spec', '/platform-spec', '/specification-mapping'].includes(path)) {
+      return ['spec']
+    }
+    return []
+  }
+
+  const [openKeys, setOpenKeys] = useState<string[]>(getOpenKeys())
 
   const handleLogout = async () => {
     try {
@@ -51,6 +77,38 @@ const MainLayout: React.FC = () => {
       key: '/users',
       icon: <TeamOutlined />,
       label: '用户管理',
+    },
+    {
+      key: '/finance',
+      icon: <DollarOutlined />,
+      label: '财务管理',
+    },
+    {
+      key: '/purchase',
+      icon: <ShoppingCartOutlined />,
+      label: '进货管理',
+    },
+    {
+      key: 'spec',
+      icon: <AppstoreOutlined />,
+      label: '规格管理',
+      children: [
+        {
+          key: '/purchase-spec',
+          icon: <ProfileOutlined />,
+          label: '进货规格',
+        },
+        {
+          key: '/platform-spec',
+          icon: <ShopOutlined />,
+          label: '平台规格',
+        },
+        {
+          key: '/specification-mapping',
+          icon: <LinkOutlined />,
+          label: '规格映射',
+        },
+      ],
     },
   ]
 
@@ -97,7 +155,9 @@ const MainLayout: React.FC = () => {
         </div>
         <Menu
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={getSelectedKeys()}
+          openKeys={openKeys}
+          onOpenChange={(keys) => setOpenKeys(keys)}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
           style={{ borderRight: 0 }}

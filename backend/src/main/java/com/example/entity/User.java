@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -17,8 +18,8 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", updatable = false, nullable = false, length = 36)
+    private UUID id = UUID.randomUUID();
 
     @Column(nullable = false, unique = true, length = 50)
     private String username;
@@ -49,6 +50,9 @@ public class User {
 
     @PrePersist
     protected void onCreate() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }

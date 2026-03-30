@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -52,7 +53,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(convertToDTO(user));
     }
@@ -66,7 +67,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, String>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+    public ResponseEntity<Map<String, String>> updateUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
         userService.updateUser(id, request);
         Map<String, String> response = new HashMap<>();
         response.put("message", "用户更新成功");
@@ -74,7 +75,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "用户删除成功");
@@ -82,7 +83,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Map<String, String>> updateUserStatus(@PathVariable Long id, @RequestParam Integer status) {
+    public ResponseEntity<Map<String, String>> updateUserStatus(@PathVariable UUID id, @RequestParam Integer status) {
         userService.updateUserStatus(id, status);
         Map<String, String> response = new HashMap<>();
         response.put("message", "状态更新成功");

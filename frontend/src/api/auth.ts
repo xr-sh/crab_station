@@ -10,7 +10,7 @@ export interface LoginResponse {
   tokenType: string
   expiresIn: number
   user: {
-    id: number
+    id: string
     username: string
     email: string
     avatar: string

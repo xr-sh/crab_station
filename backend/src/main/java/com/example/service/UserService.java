@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -26,7 +28,7 @@ public class UserService {
         return userRepository.findAll(pageable);
     }
 
-    public User getUserById(Long id) {
+    public User getUserById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
     }
@@ -55,7 +57,7 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUser(Long id, UpdateUserRequest request) {
+    public User updateUser(UUID id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
@@ -89,7 +91,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("用户不存在");
         }
@@ -97,7 +99,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUserStatus(Long id, Integer status) {
+    public void updateUserStatus(UUID id, Integer status) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         user.setStatus(status);
