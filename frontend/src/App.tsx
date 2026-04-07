@@ -10,6 +10,7 @@ import Purchase from './pages/Purchase'
 import PurchaseSpec from './pages/PurchaseSpec'
 import PlatformSpec from './pages/PlatformSpec'
 import SpecificationMapping from './pages/SpecificationMapping'
+import Express from './pages/Express'
 import PrivateRoute from './components/PrivateRoute'
 import MainLayout from './components/MainLayout'
 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
             <Route path="users" element={<Users />} />
             <Route path="finance" element={<Finance />} />
             <Route path="purchase" element={<Purchase />} />
+            <Route path="express" element={<Express />} />
             <Route path="purchase-spec" element={<PurchaseSpec />} />
             <Route path="platform-spec" element={<PlatformSpec />} />
             <Route path="specification-mapping" element={<SpecificationMapping />} />

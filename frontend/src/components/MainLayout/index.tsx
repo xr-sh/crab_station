@@ -22,6 +22,7 @@ import {
   ProfileOutlined,
   ShopOutlined,
   LinkOutlined,
+  CarOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -87,6 +88,11 @@ const MainLayout: React.FC = () => {
       key: '/purchase',
       icon: <ShoppingCartOutlined />,
       label: '进货管理',
+    },
+    {
+      key: '/express',
+      icon: <CarOutlined />,
+      label: '快递分析',
     },
     {
       key: 'spec',
