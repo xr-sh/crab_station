@@ -11,6 +11,7 @@ import {
   Typography,
   Select,
   Form,
+  Checkbox,
 } from 'antd'
 import {
   UploadOutlined,
@@ -18,7 +19,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons'
-import type { UploadFile } from 'antd/es/upload/interface'
+import type { UploadFile, RcFile } from 'antd/es/upload/interface'
 import { expressApi, ImportResult, EXPRESS_CATEGORIES } from '../../../api/express'
 
 const { Text } = Typography
@@ -32,11 +33,12 @@ interface ImportModalProps {
 const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess }) => {
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [category, setCategory] = useState<string | undefined>()
+  const [hasHeader, setHasHeader] = useState(true) // 默认有表头行
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<ImportResult[]>([])
   const [importing, setImporting] = useState(false)
 
-  const handleUpload = () => {
+const handleUpload = () => {
     if (fileList.length === 0) {
       message.warning('请选择要导入的文件')
       return
@@ -46,13 +48,23 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess 
       return
     }
 
-    const files = fileList.map(file => file.originFileObj as File)
-    
+    // 确保 originFileObj 存在，过滤掉无效文件
+    const files = fileList
+      .map(f => f.originFileObj)
+      .filter((f): f is RcFile => f !== undefined && f !== null)
+
+    console.log('准备上传的文件:', files.map(f => f.name))
+
+    if (files.length === 0) {
+      message.error('无法获取文件数据，请重新选择文件')
+      return
+    }
+
     setLoading(true)
     setImporting(true)
     setResults([])
 
-    expressApi.importExcel(files, category)
+    expressApi.importExcel(files as File[], category, hasHeader)
       .then((res: any) => {
         setResults(res as ImportResult[])
         
@@ -76,6 +88,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess 
   const handleClose = () => {
     setFileList([])
     setCategory(undefined)
+    setHasHeader(true)
     setResults([])
     setImporting(false)
     onCancel()
@@ -87,6 +100,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess 
   const handleConfirm = () => {
     setFileList([])
     setCategory(undefined)
+    setHasHeader(true)
     setResults([])
     setImporting(false)
     onSuccess()
@@ -144,6 +158,20 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess 
                 style={{ width: '100%' }}
               />
             </Form.Item>
+            
+            <Form.Item>
+              <Checkbox
+                checked={hasHeader}
+                onChange={(e) => setHasHeader(e.target.checked)}
+              >
+                Excel文件包含表头行（第一行为列名）
+              </Checkbox>
+              <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                {hasHeader 
+                  ? '第一行将作为列名，数据从第二行开始' 
+                  : '所有行都是数据，系统将自动生成列名（列1、列2...）'}
+              </div>
+            </Form.Item>
           </Form>
 
           <Upload
@@ -151,14 +179,20 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onCancel, onSuccess 
             accept=".xlsx,.xls"
             fileList={fileList}
             beforeUpload={(file) => {
-              setFileList([...fileList, file as unknown as UploadFile])
-              return false
+              // 正确构建 UploadFile 对象，包含 originFileObj
+              const uploadFile: UploadFile = {
+                uid: file.uid || `${Date.now()}-${file.name}`,
+                name: file.name,
+                status: 'done',
+                size: file.size,
+                type: file.type,
+                originFileObj: file as RcFile,
+              }
+              setFileList(prev => [...prev, uploadFile])
+              return false // 阻止自动上传
             }}
             onRemove={(file) => {
-              const index = fileList.indexOf(file)
-              const newFileList = fileList.slice()
-              newFileList.splice(index, 1)
-              setFileList(newFileList)
+              setFileList(prev => prev.filter(f => f.uid !== file.uid))
             }}
           >
             <Button icon={<UploadOutlined />}>选择Excel文件</Button>

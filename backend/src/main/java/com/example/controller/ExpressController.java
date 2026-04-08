@@ -29,7 +29,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/express")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"})
+@CrossOrigin(
+    origins = {"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"},
+    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
+)
 public class ExpressController {
 
     private final ExcelImportService excelImportService;
@@ -41,11 +44,12 @@ public class ExpressController {
     @PostMapping("/import")
     public ResponseEntity<List<ImportResultDTO>> importExcel(
             @RequestParam("files") MultipartFile[] files,
-            @RequestParam("category") String category) {
+            @RequestParam("category") String category,
+            @RequestParam(value = "hasHeader", defaultValue = "true") boolean hasHeader) {
         
-        log.info("开始导入 {} 个文件, 类别: {}", files.length, category);
+        log.info("开始导入 {} 个文件, 类别: {}, 是否有表头: {}", files.length, category, hasHeader);
         
-        List<ImportResultDTO> results = excelImportService.importExcelFiles(files, category);
+        List<ImportResultDTO> results = excelImportService.importExcelFiles(files, category, hasHeader);
         
         return ResponseEntity.ok(results);
     }

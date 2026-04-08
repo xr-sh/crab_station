@@ -54,6 +54,18 @@ public class ExpressAnalysis {
     private Integer rowNum;
 
     /**
+     * 时效（签收时间 - 寄件时间，格式：x天x小时）
+     */
+    @Column(name = "duration", length = 50)
+    private String duration;
+
+    /**
+     * 时效小时数（用于排序）
+     */
+    @Column(name = "duration_hours")
+    private Integer durationHours;
+
+    /**
      * 动态字段（JSON格式存储）
      * 示例: {"快递单号":"SF123456", "发货时间":"2024-01-01", "收件人":"张三"}
      */

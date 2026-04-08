@@ -90,11 +90,6 @@ const MainLayout: React.FC = () => {
       label: '进货管理',
     },
     {
-      key: '/express',
-      icon: <CarOutlined />,
-      label: '快递分析',
-    },
-    {
       key: 'spec',
       icon: <AppstoreOutlined />,
       label: '规格管理',
@@ -115,6 +110,11 @@ const MainLayout: React.FC = () => {
           label: '规格映射',
         },
       ],
+    },
+    {
+      key: '/express',
+      icon: <CarOutlined />,
+      label: '快递分析',
     },
   ]
 

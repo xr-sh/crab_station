@@ -8,7 +8,6 @@ import {
   message,
   Popconfirm,
   Select,
-  Tag,
   Statistic,
   Row,
   Col,
@@ -16,9 +15,7 @@ import {
 } from 'antd'
 import {
   UploadOutlined,
-  DeleteOutlined,
   ClearOutlined,
-  FileExcelOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import { expressApi, ExpressAnalysis, Statistics, EXPRESS_CATEGORIES } from '../../api/express'
@@ -34,7 +31,6 @@ const Express: React.FC = () => {
     pageSize: 10,
     total: 0,
   })
-  const [columns, setColumns] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>('顺丰')
   const [modalVisible, setModalVisible] = useState(false)
   const [statistics, setStatistics] = useState<Statistics>({
@@ -42,6 +38,13 @@ const Express: React.FC = () => {
     fileCount: 0,
     columnCount: 0,
     categoryStats: {},
+  })
+  const [sorter, setSorter] = useState<{
+    field: string | null,
+    order: 'ascend' | 'descend' | null
+  }>({
+    field: null,
+    order: null,
   })
 
   // 获取统计信息
@@ -54,25 +57,30 @@ const Express: React.FC = () => {
     }
   }
 
-  // 获取列名
-  const fetchColumns = async () => {
-    try {
-      const res: any = await expressApi.getColumns()
-      setColumns(res)
-    } catch (error: any) {
-      console.error('获取列名失败', error)
-    }
-  }
-
   // 获取数据列表
   const fetchData = async (page = 0, size = 10) => {
     setLoading(true)
     try {
+      // 构建排序参数
+      let sortBy = 'importedAt'
+      let sortDirection = 'DESC'
+      
+      if (sorter.field && sorter.order) {
+        // 映射前端字段名到后端字段名
+        const fieldMapping: Record<string, string> = {
+          duration: 'durationHours',
+          sentTime: 'sentTime',
+          receivedTime: 'receivedTime',
+        }
+        sortBy = fieldMapping[sorter.field] || sorter.field
+        sortDirection = sorter.order === 'ascend' ? 'ASC' : 'DESC'
+      }
+      
       const res = await expressApi.getList({
         page,
         size,
-        sortBy: 'importedAt',
-        sortDirection: 'DESC',
+        sortBy,
+        sortDirection,
         category: selectedCategory,
       }) as any
       
@@ -91,30 +99,17 @@ const Express: React.FC = () => {
 
   useEffect(() => {
     fetchStatistics()
-    fetchColumns()
     fetchData()
   }, [])
 
   useEffect(() => {
     fetchData(0, pagination.pageSize)
-  }, [selectedCategory])
+  }, [selectedCategory, sorter])
 
   // 刷新数据
   const handleRefresh = () => {
     fetchStatistics()
-    fetchColumns()
     fetchData(pagination.current - 1, pagination.pageSize)
-  }
-
-  // 删除单条记录
-  const handleDelete = async (id: string) => {
-    try {
-      await expressApi.delete(id)
-      message.success('删除成功')
-      handleRefresh()
-    } catch (error: any) {
-      message.error(error.message || '删除失败')
-    }
   }
 
   // 清空所有数据
@@ -134,85 +129,74 @@ const Express: React.FC = () => {
   }
 
   // 表格变化
-  const handleTableChange = (newPagination: any) => {
+  const handleTableChange = (newPagination: any, filters: any, newSorter: any) => {
+    // 更新排序状态
+    if (newSorter && newSorter.field) {
+      setSorter({
+        field: newSorter.field,
+        order: newSorter.order || null,
+      })
+    } else {
+      setSorter({ field: null, order: null })
+    }
+    
+    // 更新分页
     fetchData(newPagination.current - 1, newPagination.pageSize)
   }
 
   // 动态生成表格列
   const generateColumns = () => {
-    // 固定列
-    const fixedColumns = [
-      {
-        title: '类别',
-        dataIndex: 'category',
-        key: 'category',
-        width: 100,
-        render: (text: string) => (
-          <Tag color={text === '顺丰' ? 'orange' : text === '京东' ? 'red' : 'blue'}>
-            {text || '-'}
-          </Tag>
-        ),
-      },
-      {
-        title: '文件名',
-        dataIndex: 'fileName',
-        key: 'fileName',
-        width: 150,
-        ellipsis: true,
-        render: (text: string) => (
-          <Tag icon={<FileExcelOutlined />} color="blue">
-            {text}
-          </Tag>
-        ),
-      },
-      {
-        title: 'Sheet',
-        dataIndex: 'sheetName',
-        key: 'sheetName',
-        width: 100,
-      },
-      {
-        title: '行号',
-        dataIndex: 'rowNum',
-        key: 'rowNum',
-        width: 80,
-      },
+    // 固定列顺序
+    const columnConfig = [
+      { title: '寄件时间', key: 'sentTime', width: 150 },
+      { title: '签收时间', key: 'receivedTime', width: 150 },
+      { title: '时效', key: 'duration', width: 120, sortable: true },
+      { title: '收件人', key: 'receiver', width: 120 },
+      { title: '收件地址', key: 'receiverAddress', width: 200, ellipsis: true },
+      { title: '计费重量', key: 'weight', width: 100 },
+      { title: '运单号', key: 'trackingNo', width: 150 },
+      { title: '运费', key: 'fee', width: 100 },
     ]
 
-    // 动态列（从数据中提取）
-    const dynamicColumns = columns.slice(0, 8).map(col => ({
-      title: col,
-      key: col,
-      width: 150,
-      ellipsis: true,
-      render: (_: any, record: ExpressAnalysis) => {
-        const value = record.dynamicFields?.[col]
-        return value !== undefined && value !== null ? String(value) : '-'
-      },
-    }))
-
-    // 操作列
-    const actionColumn = {
-      title: '操作',
-      key: 'action',
-      width: 100,
-      fixed: 'right' as const,
-      render: (_: any, record: ExpressAnalysis) => (
-        <Popconfirm
-          title="确认删除"
-          description="确定要删除这条记录吗？"
-          onConfirm={() => handleDelete(record.id)}
-          okText="确定"
-          cancelText="取消"
-        >
-          <Button type="link" danger icon={<DeleteOutlined />} size="small">
-            删除
-          </Button>
-        </Popconfirm>
-      ),
+    // 字段名映射（支持多种可能的字段名）
+    const fieldMappings: Record<string, string[]> = {
+      sentTime: ['寄件时间', '寄件日期', '寄件', '发货时间', '发货日期', '发出时间', '发出日期'],
+      receivedTime: ['签收时间', '签收日期', '签收', '收货时间', '收货日期'],
+      receiver: ['收件人', '收件人姓名', '收货人', '收货人姓名'],
+      receiverAddress: ['收件地址', '收件人地址', '收货地址', '收货人地址', '收件人详细地址'],
+      weight: ['计费重量', '重量', '收费重量', '实际重量'],
+      trackingNo: ['运单号', '快递单号', '单号', '物流单号', '订单号'],
+      fee: ['运费', '费用', '快递费', '物流费', '快递费用'],
     }
 
-    return [...fixedColumns, ...dynamicColumns, actionColumn]
+    return columnConfig.map(col => ({
+      title: col.title,
+      key: col.key,
+      dataIndex: col.key,
+      width: col.width,
+      ellipsis: col.ellipsis,
+      sorter: col.sortable ? true : undefined,
+      sortOrder: col.sortable && sorter.field === col.key ? sorter.order : undefined,
+      render: (_: any, record: ExpressAnalysis) => {
+        // 时效列直接使用后端计算的值
+        if (col.key === 'duration') {
+          return record.duration || '-'
+        }
+
+        // 其他列从 dynamicFields 中查找对应字段
+        const possibleFieldNames = fieldMappings[col.key] || [col.title]
+        const fields = record.dynamicFields || {}
+        
+        for (const fieldName of possibleFieldNames) {
+          const value = fields[fieldName]
+          if (value !== undefined && value !== null) {
+            return String(value)
+          }
+        }
+        
+        return '-'
+      },
+    }))
   }
 
   return (

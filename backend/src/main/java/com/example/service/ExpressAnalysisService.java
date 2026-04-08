@@ -110,10 +110,11 @@ public class ExpressAnalysisService {
 
     /**
      * 清空所有数据
+     * 使用批量删除避免乐观锁冲突
      */
     @Transactional
     public void clearAll() {
-        expressAnalysisRepository.deleteAll();
+        expressAnalysisRepository.deleteAllInBatch();
         log.info("已清空所有快递分析数据");
     }
 
@@ -165,6 +166,8 @@ public class ExpressAnalysisService {
                 .fileName(entity.getFileName())
                 .sheetName(entity.getSheetName())
                 .rowNum(entity.getRowNum())
+                .duration(entity.getDuration())
+                .durationHours(entity.getDurationHours())
                 .dynamicFields(dynamicFields)
                 .importedAt(entity.getImportedAt())
                 .createdAt(entity.getCreatedAt())

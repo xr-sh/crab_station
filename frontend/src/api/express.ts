@@ -15,6 +15,8 @@ export interface ExpressAnalysis {
   fileName: string
   sheetName: string
   rowNum: number
+  duration: string | null
+  durationHours: number | null
   dynamicFields: Record<string, any>
   importedAt: string
   createdAt: string
@@ -66,12 +68,21 @@ export const expressApi = {
   /**
    * 导入Excel文件（支持多文件上传）
    */
-  importExcel: async (files: File[], category: string): Promise<ImportResult[]> => {
+  importExcel: async (files: File[], category: string, hasHeader: boolean = true): Promise<ImportResult[]> => {
     const formData = new FormData()
-    files.forEach(file => {
-      formData.append('files', file)
+    
+    // 只添加有效的 File 对象
+    files.forEach((file, index) => {
+      if (file && file instanceof File) {
+        formData.append('files', file)
+      } else {
+        console.warn(`文件 ${index} 无效，跳过`)
+      }
     })
+    
     formData.append('category', category)
+    formData.append('hasHeader', String(hasHeader))
+    
     return request.post('/express/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

@@ -4,6 +4,7 @@ import com.example.entity.ExpressAnalysis;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -56,13 +57,25 @@ public interface ExpressAnalysisRepository extends JpaRepository<ExpressAnalysis
     long countByFileName(String fileName);
 
     /**
-     * 删除指定文件名的所有记录
+     * 删除指定文件名的所有记录（批量删除）
      */
-    void deleteByFileName(String fileName);
+    @Modifying
+    @Query("DELETE FROM ExpressAnalysis e WHERE e.fileName = :fileName")
+    void deleteByFileName(@Param("fileName") String fileName);
 
     /**
-     * 获取所有不重复的文件名
+     * 获取所有不重复的文件名（按最新导入时间排序）
+     * 使用子查询避免 DISTINCT + ORDER BY 列不在 SELECT 中的 MySQL 限制
      */
-    @Query("SELECT DISTINCT e.fileName FROM ExpressAnalysis e ORDER BY e.importedAt DESC")
+    @Query("SELECT e.fileName FROM ExpressAnalysis e " +
+           "WHERE e.importedAt IN (SELECT MAX(e2.importedAt) FROM ExpressAnalysis e2 WHERE e2.fileName = e.fileName) " +
+           "ORDER BY e.importedAt DESC")
     List<String> findAllFileNames();
+
+    /**
+     * 批量删除所有记录（JPQL，直接执行 DELETE SQL，不经过 ORM 层）
+     */
+    @Modifying
+    @Query("DELETE FROM ExpressAnalysis")
+    void deleteAllInBatch();
 }

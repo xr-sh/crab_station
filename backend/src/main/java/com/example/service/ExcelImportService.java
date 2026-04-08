@@ -35,14 +35,15 @@ public class ExcelImportService {
      * 
      * @param files 上传的文件列表
      * @param category 快递类别（顺丰/京东）
+     * @param hasHeader 是否包含表头行
      * @return 导入结果列表
      */
     @Transactional
-    public List<ImportResultDTO> importExcelFiles(MultipartFile[] files, String category) {
+    public List<ImportResultDTO> importExcelFiles(MultipartFile[] files, String category, boolean hasHeader) {
         List<ImportResultDTO> results = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            ImportResultDTO result = importSingleFile(file, category);
+            ImportResultDTO result = importSingleFile(file, category, hasHeader);
             results.add(result);
         }
 
@@ -53,17 +54,20 @@ public class ExcelImportService {
      * 导入单个Excel文件
      */
     @Transactional
-    public ImportResultDTO importSingleFile(MultipartFile file, String category) {
+    public ImportResultDTO importSingleFile(MultipartFile file, String category, boolean hasHeader) {
         String fileName = file.getOriginalFilename();
         
         try {
-            log.info("开始导入文件: {}, 类别: {}", fileName, category);
+            log.info("开始导入文件: {}, 类别: {}, 是否有表头: {}", fileName, category, hasHeader);
 
             // 创建监听器
-            DynamicExcelListener listener = new DynamicExcelListener(fileName, category);
+            DynamicExcelListener listener = new DynamicExcelListener(fileName, category, hasHeader);
 
             // 使用EasyExcel读取文件
-            ExcelReader excelReader = EasyExcel.read(file.getInputStream(), listener).build();
+            // headRowNumber(0) 表示从第0行开始读取，不跳过任何行（让监听器自己处理表头）
+            ExcelReader excelReader = EasyExcel.read(file.getInputStream(), listener)
+                    .headRowNumber(0)
+                    .build();
 
             // 获取所有Sheet
             List<ReadSheet> sheets = excelReader.excelExecutor().sheetList();
@@ -79,12 +83,15 @@ public class ExcelImportService {
                 ReadSheet sheet = sheets.get(i);
                 
                 // 为每个Sheet创建新的监听器实例
-                DynamicExcelListener sheetListener = new DynamicExcelListener(fileName, category);
+                DynamicExcelListener sheetListener = new DynamicExcelListener(fileName, category, hasHeader);
                 sheetListener.setSheetName(sheet.getSheetName());
                 sheetListener.setSheetIndex(i);
 
                 // 重新创建reader并读取当前sheet
-                ExcelReader sheetReader = EasyExcel.read(file.getInputStream(), sheetListener).build();
+                // headRowNumber(0) 表示从第0行开始读取，不跳过任何行
+                ExcelReader sheetReader = EasyExcel.read(file.getInputStream(), sheetListener)
+                        .headRowNumber(0)
+                        .build();
                 sheetReader.read(sheet);
 
                 // 收集数据

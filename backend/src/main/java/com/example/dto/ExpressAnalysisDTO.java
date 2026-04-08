@@ -41,6 +41,16 @@ public class ExpressAnalysisDTO {
     private Integer rowNum;
 
     /**
+     * 时效（签收时间 - 寄件时间，格式：x天x小时）
+     */
+    private String duration;
+
+    /**
+     * 时效小时数（用于排序）
+     */
+    private Integer durationHours;
+
+    /**
      * 动态字段（已解析为Map）
      */
     private Map<String, Object> dynamicFields;
