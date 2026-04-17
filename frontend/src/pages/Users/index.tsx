@@ -10,6 +10,7 @@ import {
   Typography,
   Switch,
   Tooltip,
+  Grid,
 } from 'antd'
 import {
   PlusOutlined,
@@ -21,6 +22,7 @@ import { userApi, User } from '../../api/users'
 import UserModal from './components/UserModal'
 
 const { Title } = Typography
+const { useBreakpoint } = Grid
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -33,6 +35,10 @@ const Users: React.FC = () => {
   const [keyword, setKeyword] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const screens = useBreakpoint()
+
+  // 判断是否为移动端
+  const isMobile = !screens.md
 
   const fetchUsers = async (page = 0, size = 10, searchKeyword = '') => {
     setLoading(true)
@@ -179,36 +185,38 @@ const Users: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>用户管理</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               添加用户
             </Button>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
               placeholder="搜索用户名或邮箱"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onPressEnter={handleSearch}
-              style={{ width: 250 }}
+              style={{ width: isMobile ? '100%' : 250 }}
               prefix={<SearchOutlined />}
             />
-            <Button type="primary" onClick={handleSearch}>
-              搜索
-            </Button>
-            <Button onClick={() => {
-              setKeyword('')
-              fetchUsers(0, pagination.pageSize, '')
-            }}>
-              重置
-            </Button>
+            <Space wrap>
+              <Button type="primary" onClick={handleSearch}>
+                搜索
+              </Button>
+              <Button onClick={() => {
+                setKeyword('')
+                fetchUsers(0, pagination.pageSize, '')
+              }}>
+                重置
+              </Button>
+            </Space>
           </Space>
         </div>
 
@@ -219,6 +227,7 @@ const Users: React.FC = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

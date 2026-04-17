@@ -13,6 +13,7 @@ import {
   Row,
   Col,
   Tag,
+  Grid,
 } from 'antd'
 import {
   PlusOutlined,
@@ -28,6 +29,7 @@ import PurchaseModal from './components/PurchaseModal'
 
 const { Title } = Typography
 const { RangePicker } = DatePicker
+const { useBreakpoint } = Grid
 
 const Purchase: React.FC = () => {
   const [records, setRecords] = useState<PurchaseRecord[]>([])
@@ -49,6 +51,8 @@ const Purchase: React.FC = () => {
     totalWeight: 0,
     totalAmount: 0,
   })
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   const fetchRecords = async (page = 0, size = 10) => {
     setLoading(true)
@@ -277,10 +281,10 @@ const Purchase: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="进货单数"
@@ -290,7 +294,7 @@ const Purchase: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="总重量"
@@ -302,7 +306,7 @@ const Purchase: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="总金额"
@@ -318,19 +322,19 @@ const Purchase: React.FC = () => {
 
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>进货管理</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               新增进货
             </Button>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
               placeholder="搜索供应商"
-              style={{ width: 200 }}
+              style={{ width: isMobile ? '100%' : 200 }}
               value={filters.supplier}
               onChange={(e) => handleSupplierChange(e.target.value)}
               onPressEnter={() => fetchRecords(0, pagination.pageSize)}
@@ -338,6 +342,7 @@ const Purchase: React.FC = () => {
             <RangePicker
               placeholder={['开始日期', '结束日期']}
               onChange={handleDateChange}
+              style={{ width: isMobile ? '100%' : 'auto' }}
             />
             <Button onClick={() => {
               setFilters({ supplier: '', startDate: undefined, endDate: undefined })
@@ -358,6 +363,7 @@ const Purchase: React.FC = () => {
             expandedRowRender,
             rowExpandable: (record) => record.items && record.items.length > 0,
           }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

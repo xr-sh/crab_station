@@ -10,6 +10,7 @@ import {
   Typography,
   Select,
   Tag,
+  Grid,
 } from 'antd'
 import {
   PlusOutlined,
@@ -21,6 +22,7 @@ import { specificationMappingApi, SpecificationMapping } from '../../api/specifi
 import MappingModal from './components/MappingModal'
 
 const { Title } = Typography
+const { useBreakpoint } = Grid
 
 const SpecificationMappingPage: React.FC = () => {
   const [mappings, setMappings] = useState<SpecificationMapping[]>([])
@@ -37,6 +39,8 @@ const SpecificationMappingPage: React.FC = () => {
   })
   const [modalVisible, setModalVisible] = useState(false)
   const [editingMapping, setEditingMapping] = useState<SpecificationMapping | null>(null)
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   const fetchMappings = async (page = 0, size = 10) => {
     setLoading(true)
@@ -178,37 +182,37 @@ const SpecificationMappingPage: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>规格映射</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               新增映射
             </Button>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space wrap>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
               placeholder="进货规格"
               value={filters.purchaseSpecName}
               onChange={(e) => setFilters(prev => ({ ...prev, purchaseSpecName: e.target.value }))}
               onPressEnter={handleSearch}
-              style={{ width: 150 }}
+              style={{ width: isMobile ? '100%' : 150 }}
             />
             <Input
               placeholder="平台规格"
               value={filters.platformSpecName}
               onChange={(e) => setFilters(prev => ({ ...prev, platformSpecName: e.target.value }))}
               onPressEnter={handleSearch}
-              style={{ width: 150 }}
+              style={{ width: isMobile ? '100%' : 150 }}
             />
             <Select
               placeholder="状态"
               allowClear
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               value={filters.status}
               onChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
               options={[
@@ -216,12 +220,14 @@ const SpecificationMappingPage: React.FC = () => {
                 { value: 0, label: '禁用' },
               ]}
             />
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              搜索
-            </Button>
-            <Button onClick={handleReset}>
-              重置
-            </Button>
+            <Space wrap>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>
+                重置
+              </Button>
+            </Space>
           </Space>
         </div>
 
@@ -232,6 +238,7 @@ const SpecificationMappingPage: React.FC = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

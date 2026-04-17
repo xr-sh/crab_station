@@ -10,6 +10,7 @@ import {
   Typography,
   Select,
   Tag,
+  Grid,
 } from 'antd'
 import {
   PlusOutlined,
@@ -21,6 +22,7 @@ import { platformSpecApi, PlatformSpec } from '../../api/platformSpec'
 import PlatformSpecModal from './components/PlatformSpecModal'
 
 const { Title } = Typography
+const { useBreakpoint } = Grid
 
 const PlatformSpecPage: React.FC = () => {
   const [specs, setSpecs] = useState<PlatformSpec[]>([])
@@ -36,6 +38,8 @@ const PlatformSpecPage: React.FC = () => {
   })
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSpec, setEditingSpec] = useState<PlatformSpec | null>(null)
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   const fetchSpecs = async (page = 0, size = 10) => {
     setLoading(true)
@@ -170,30 +174,30 @@ const PlatformSpecPage: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>平台规格管理</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               新增规格
             </Button>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space wrap>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
               placeholder="规格名称"
               value={filters.name}
               onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
               onPressEnter={handleSearch}
-              style={{ width: 200 }}
+              style={{ width: isMobile ? '100%' : 200 }}
             />
             <Select
               placeholder="状态"
               allowClear
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               value={filters.status}
               onChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
               options={[
@@ -201,12 +205,14 @@ const PlatformSpecPage: React.FC = () => {
                 { value: 0, label: '禁用' },
               ]}
             />
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              搜索
-            </Button>
-            <Button onClick={handleReset}>
-              重置
-            </Button>
+            <Space wrap>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                搜索
+              </Button>
+              <Button onClick={handleReset}>
+                重置
+              </Button>
+            </Space>
           </Space>
         </div>
 
@@ -217,6 +223,7 @@ const PlatformSpecPage: React.FC = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

@@ -18,14 +18,14 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from '@ant-design/icons'
-import { purchaseSpecApi, PurchaseSpec } from '../../api/purchaseSpec'
-import PurchaseSpecModal from './components/PurchaseSpecModal'
+import { apiConfigApi, ApiConfig as ApiConfigType } from '../../api/apiConfig'
+import ApiConfigModal from './components/ApiConfigModal'
 
 const { Title } = Typography
 const { useBreakpoint } = Grid
 
-const PurchaseSpecPage: React.FC = () => {
-  const [specs, setSpecs] = useState<PurchaseSpec[]>([])
+const ApiConfigPage: React.FC = () => {
+  const [configs, setConfigs] = useState<ApiConfigType[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
     current: 1,
@@ -33,88 +33,106 @@ const PurchaseSpecPage: React.FC = () => {
     total: 0,
   })
   const [filters, setFilters] = useState({
-    name: '',
+    platformName: '',
     status: undefined as number | undefined,
   })
   const [modalVisible, setModalVisible] = useState(false)
-  const [editingSpec, setEditingSpec] = useState<PurchaseSpec | null>(null)
+  const [editingConfig, setEditingConfig] = useState<ApiConfigType | null>(null)
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
-  const fetchSpecs = async (page = 0, size = 10) => {
+  const fetchConfigs = async (page = 0, size = 10) => {
     setLoading(true)
     try {
-      const res = await purchaseSpecApi.getPurchaseSpecs({
+      const res = await apiConfigApi.getApiConfigs({
         page,
         size,
         sortBy: 'createdAt',
         sortDirection: 'DESC',
-        name: filters.name || undefined,
+        platformName: filters.platformName || undefined,
         status: filters.status,
       }) as any
-      setSpecs(res.content)
+      setConfigs(res.content)
       setPagination({
         current: page + 1,
         pageSize: size,
         total: res.totalElements,
       })
     } catch (error: any) {
-      message.error(error.message || '获取进货规格列表失败')
+      message.error(error.message || '获取API配置列表失败')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchSpecs()
+    fetchConfigs()
   }, [])
 
   const handleTableChange = (newPagination: any) => {
-    fetchSpecs(newPagination.current - 1, newPagination.pageSize)
+    fetchConfigs(newPagination.current - 1, newPagination.pageSize)
   }
 
   const handleSearch = () => {
-    fetchSpecs(0, pagination.pageSize)
+    fetchConfigs(0, pagination.pageSize)
   }
 
   const handleReset = () => {
     setFilters({
-      name: '',
+      platformName: '',
       status: undefined,
     })
-    setTimeout(() => fetchSpecs(), 0)
+    setTimeout(() => fetchConfigs(), 0)
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await purchaseSpecApi.deletePurchaseSpec(id)
+      await apiConfigApi.deleteApiConfig(id)
       message.success('删除成功')
-      fetchSpecs(pagination.current - 1, pagination.pageSize)
+      fetchConfigs(pagination.current - 1, pagination.pageSize)
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
   }
 
   const handleAdd = () => {
-    setEditingSpec(null)
+    setEditingConfig(null)
     setModalVisible(true)
   }
 
-  const handleEdit = (record: PurchaseSpec) => {
-    setEditingSpec(record)
+  const handleEdit = (record: ApiConfigType) => {
+    setEditingConfig(record)
     setModalVisible(true)
   }
 
   const handleModalSuccess = () => {
     setModalVisible(false)
-    fetchSpecs(pagination.current - 1, pagination.pageSize)
+    fetchConfigs(pagination.current - 1, pagination.pageSize)
   }
 
   const columns = [
     {
-      title: '规格名称',
-      dataIndex: 'name',
-      key: 'name',
+      title: '平台名称',
+      dataIndex: 'platformName',
+      key: 'platformName',
+    },
+    {
+      title: 'API Key',
+      dataIndex: 'apiKey',
+      key: 'apiKey',
+      render: (key: string) => key ? `${key.substring(0, 8)}...` : '-',
+    },
+    {
+      title: 'Secret',
+      dataIndex: 'secret',
+      key: 'secret',
+      render: (secret: string) => secret ? `${secret.substring(0, 8)}...` : '-',
+    },
+    {
+      title: 'Base URL',
+      dataIndex: 'baseUrl',
+      key: 'baseUrl',
+      render: (url: string) => url || '-',
     },
     {
       title: '状态',
@@ -142,7 +160,7 @@ const PurchaseSpecPage: React.FC = () => {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: PurchaseSpec) => (
+      render: (_: any, record: ApiConfigType) => (
         <Space size="middle">
           <Button
             type="primary"
@@ -154,7 +172,7 @@ const PurchaseSpecPage: React.FC = () => {
           </Button>
           <Popconfirm
             title="确认删除"
-            description="确定要删除这条进货规格吗？"
+            description="确定要删除这条API配置吗？"
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
@@ -178,9 +196,9 @@ const PurchaseSpecPage: React.FC = () => {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
-            <Title level={4} style={{ margin: 0 }}>进货规格管理</Title>
+            <Title level={4} style={{ margin: 0 }}>API配置管理</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              新增规格
+              新增配置
             </Button>
           </div>
         </div>
@@ -188,9 +206,9 @@ const PurchaseSpecPage: React.FC = () => {
         <div style={{ marginBottom: 16 }}>
           <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
-              placeholder="规格名称"
-              value={filters.name}
-              onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="平台名称"
+              value={filters.platformName}
+              onChange={(e) => setFilters(prev => ({ ...prev, platformName: e.target.value }))}
               onPressEnter={handleSearch}
               style={{ width: isMobile ? '100%' : 200 }}
             />
@@ -218,7 +236,7 @@ const PurchaseSpecPage: React.FC = () => {
 
         <Table
           columns={columns}
-          dataSource={specs}
+          dataSource={configs}
           rowKey="id"
           loading={loading}
           pagination={pagination}
@@ -227,14 +245,14 @@ const PurchaseSpecPage: React.FC = () => {
         />
       </Card>
 
-      <PurchaseSpecModal
+      <ApiConfigModal
         visible={modalVisible}
         onCancel={() => setModalVisible(false)}
         onSuccess={handleModalSuccess}
-        spec={editingSpec}
+        config={editingConfig}
       />
     </div>
   )
 }
 
-export default PurchaseSpecPage
+export default ApiConfigPage

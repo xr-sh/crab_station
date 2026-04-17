@@ -13,6 +13,7 @@ import {
   Statistic,
   Row,
   Col,
+  Grid,
 } from 'antd'
 import {
   PlusOutlined,
@@ -28,6 +29,7 @@ import FinanceModal from './components/FinanceModal'
 
 const { Title } = Typography
 const { RangePicker } = DatePicker
+const { useBreakpoint } = Grid
 
 const Finance: React.FC = () => {
   const [records, setRecords] = useState<FinanceRecord[]>([])
@@ -49,6 +51,8 @@ const Finance: React.FC = () => {
     expense: 0,
     balance: 0,
   })
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   const fetchRecords = async (page = 0, size = 10) => {
     setLoading(true)
@@ -220,10 +224,10 @@ const Finance: React.FC = () => {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="总收入"
@@ -235,7 +239,7 @@ const Finance: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="总支出"
@@ -247,7 +251,7 @@ const Finance: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="结余"
@@ -263,20 +267,20 @@ const Finance: React.FC = () => {
 
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>财务管理</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               新增记录
             </Button>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Select
               placeholder="选择类别"
               allowClear
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               value={filters.type}
               onChange={handleTypeChange}
               options={[
@@ -287,6 +291,7 @@ const Finance: React.FC = () => {
             <RangePicker
               placeholder={['开始日期', '结束日期']}
               onChange={handleDateChange}
+              style={{ width: isMobile ? '100%' : 'auto' }}
             />
             <Button onClick={() => {
               setFilters({ type: undefined, startDate: undefined, endDate: undefined })
@@ -303,6 +308,7 @@ const Finance: React.FC = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

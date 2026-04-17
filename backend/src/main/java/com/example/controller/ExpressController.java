@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -56,25 +57,41 @@ public class ExpressController {
 
     /**
      * 分页查询快递分析数据
+     * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
      */
     @GetMapping
     public ResponseEntity<PageResponse<ExpressAnalysisDTO>> getList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "importedAt") String sortBy,
+            @RequestParam(defaultValue = "imported_at") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String receiverAddress,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sentTimeStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sentTimeEnd) {
+
+        // Java 属性名到数据库列名的映射（原生 SQL 查询需要使用数据库列名）
+        Map<String, String> fieldMapping = new HashMap<>();
+        fieldMapping.put("importedAt", "imported_at");
+        fieldMapping.put("createdAt", "created_at");
+        fieldMapping.put("updatedAt", "updated_at");
+        fieldMapping.put("durationHours", "duration_hours");
+        fieldMapping.put("category", "category");
+        fieldMapping.put("fileName", "file_name");
+        
+        // 转换排序字段名
+        String dbColumnName = fieldMapping.getOrDefault(sortBy, sortBy);
 
         Sort sort = Sort.by(
                 sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, 
-                sortBy
+                dbColumnName
         );
         PageRequest pageRequest = PageRequest.of(page, size, sort);
 
         Page<ExpressAnalysisDTO> pageResult = expressAnalysisService.getExpressAnalysisList(
-                category, startDate, endDate, pageRequest
+                category, startDate, endDate, receiverAddress, sentTimeStart, sentTimeEnd, pageRequest
         );
 
         PageResponse<ExpressAnalysisDTO> response = PageResponse.<ExpressAnalysisDTO>builder()

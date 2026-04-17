@@ -92,6 +92,7 @@ export const expressApi = {
 
   /**
    * 分页查询快递分析数据
+   * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
    */
   getList: (params: {
     page?: number
@@ -101,6 +102,9 @@ export const expressApi = {
     category?: string
     startDate?: string
     endDate?: string
+    receiverAddress?: string
+    sentTimeStart?: string
+    sentTimeEnd?: string
   }) => {
     return request.get<PageResponse<ExpressAnalysis>>('/express', { params })
   },

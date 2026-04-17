@@ -9,12 +9,35 @@ const request: AxiosInstance = axios.create({
   },
 })
 
+// 获取 token 的辅助函数 - 直接从 localStorage 获取确保可靠性
+const getToken = (): string | null => {
+  try {
+    // 直接从 localStorage 获取，避免 hydration 时机问题
+    const authStorage = localStorage.getItem('auth-storage')
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage)
+      const token = parsed.state?.token
+      if (token) {
+        console.log('[Request] Token found:', token.substring(0, 20) + '...')
+        return token
+      }
+    }
+    console.log('[Request] No token found')
+  } catch (e) {
+    console.error('[Request] Failed to parse auth-storage:', e)
+  }
+  return null
+}
+
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().token
+    const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('[Request] Auth header set for:', config.url)
+    } else {
+      console.warn('[Request] No token for:', config.url)
     }
     return config
   },

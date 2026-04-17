@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Table,
   Button,
@@ -12,16 +12,24 @@ import {
   Row,
   Col,
   Empty,
+  Grid,
+  DatePicker,
+  Cascader,
 } from 'antd'
 import {
   UploadOutlined,
   ClearOutlined,
   ReloadOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import { expressApi, ExpressAnalysis, Statistics, EXPRESS_CATEGORIES } from '../../api/express'
 import ImportModal from './components/ImportModal'
+import { getAreaOptionsCached, getFullAddress } from '../../utils/chinaDivision'
 
 const { Title } = Typography
+const { useBreakpoint } = Grid
+const { RangePicker } = DatePicker
 
 const Express: React.FC = () => {
   const [data, setData] = useState<ExpressAnalysis[]>([])
@@ -46,6 +54,15 @@ const Express: React.FC = () => {
     field: null,
     order: null,
   })
+  // 搜索条件
+  const [receiverAddressArr, setReceiverAddressArr] = useState<string[]>([])
+  const [sentTimeRange, setSentTimeRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null)
+  
+  // 省市区数据（缓存）
+  const areaOptions = useMemo(() => getAreaOptionsCached(), [])
+  
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   // 获取统计信息
   const fetchStatistics = async () => {
@@ -61,14 +78,14 @@ const Express: React.FC = () => {
   const fetchData = async (page = 0, size = 10) => {
     setLoading(true)
     try {
-      // 构建排序参数
-      let sortBy = 'importedAt'
+      // 构建排序参数（使用数据库列名）
+      let sortBy = 'imported_at'
       let sortDirection = 'DESC'
       
       if (sorter.field && sorter.order) {
-        // 映射前端字段名到后端字段名
+        // 映射前端字段名到数据库列名
         const fieldMapping: Record<string, string> = {
-          duration: 'durationHours',
+          duration: 'duration_hours',
           sentTime: 'sentTime',
           receivedTime: 'receivedTime',
         }
@@ -76,13 +93,28 @@ const Express: React.FC = () => {
         sortDirection = sorter.order === 'ascend' ? 'ASC' : 'DESC'
       }
       
-      const res = await expressApi.getList({
+      // 构建搜索参数
+      const params: any = {
         page,
         size,
         sortBy,
         sortDirection,
         category: selectedCategory,
-      }) as any
+      }
+      
+      // 收件地址搜索（将选中的省市区数组转为完整地址字符串）
+      const receiverAddress = getFullAddress(receiverAddressArr)
+      if (receiverAddress) {
+        params.receiverAddress = receiverAddress
+      }
+      
+      // 寄件时间范围搜索
+      if (sentTimeRange && sentTimeRange[0] && sentTimeRange[1]) {
+        params.sentTimeStart = sentTimeRange[0].format('YYYY-MM-DD')
+        params.sentTimeEnd = sentTimeRange[1].format('YYYY-MM-DD')
+      }
+      
+      const res = await expressApi.getList(params) as any
       
       setData(res.content)
       setPagination({
@@ -104,7 +136,7 @@ const Express: React.FC = () => {
 
   useEffect(() => {
     fetchData(0, pagination.pageSize)
-  }, [selectedCategory, sorter])
+  }, [selectedCategory, sorter, receiverAddressArr, sentTimeRange])
 
   // 刷新数据
   const handleRefresh = () => {
@@ -123,13 +155,26 @@ const Express: React.FC = () => {
     }
   }
 
+  // 重置搜索条件
+  const handleResetSearch = () => {
+    setReceiverAddressArr([])
+    setSentTimeRange(null)
+    setSelectedCategory('顺丰')
+    fetchData(0, pagination.pageSize)
+  }
+
+  // 搜索按钮
+  const handleSearch = () => {
+    fetchData(0, pagination.pageSize)
+  }
+
   // 导入成功回调
   const handleImportSuccess = () => {
     handleRefresh()
   }
 
   // 表格变化
-  const handleTableChange = (newPagination: any, filters: any, newSorter: any) => {
+  const handleTableChange = (newPagination: any, _filters: any, newSorter: any) => {
     // 更新排序状态
     if (newSorter && newSorter.field) {
       setSorter({
@@ -200,10 +245,10 @@ const Express: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="总记录数"
@@ -212,7 +257,7 @@ const Express: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="顺丰"
@@ -222,7 +267,7 @@ const Express: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="京东"
@@ -236,9 +281,9 @@ const Express: React.FC = () => {
 
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
             <Title level={4} style={{ margin: 0 }}>快递分析</Title>
-            <Space>
+            <Space wrap>
               <Button icon={<UploadOutlined />} type="primary" onClick={() => setModalVisible(true)}>
                 导入数据
               </Button>
@@ -257,20 +302,53 @@ const Express: React.FC = () => {
                 </Button>
               </Popconfirm>
             </Space>
-          </Space>
+          </div>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <Space>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <span>筛选类别：</span>
             <Select
               placeholder="选择快递类别"
               allowClear
-              style={{ width: 150 }}
+              style={{ width: isMobile ? '100%' : 150 }}
               value={selectedCategory}
               onChange={setSelectedCategory}
               options={EXPRESS_CATEGORIES.map(name => ({ value: name, label: name }))}
             />
+          </Space>
+        </div>
+
+        {/* 搜索区域 */}
+        <div style={{ marginBottom: 16, padding: '16px', background: '#fafafa', borderRadius: 8 }}>
+          <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
+            <Cascader
+              options={areaOptions}
+              value={receiverAddressArr}
+              onChange={(value) => setReceiverAddressArr(value as string[])}
+              placeholder="选择收件地址（省/市/区）"
+              style={{ width: isMobile ? '100%' : 280 }}
+              showSearch={{
+                filter: (inputValue, path) =>
+                  path.some(option => 
+                    (option.label as string).toLowerCase().includes(inputValue.toLowerCase())
+                  ),
+              }}
+              changeOnSelect
+              maxTagCount="responsive"
+            />
+            <RangePicker
+              placeholder={['寄件开始日期', '寄件结束日期']}
+              value={sentTimeRange}
+              onChange={(dates) => setSentTimeRange(dates)}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            />
+            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+              搜索
+            </Button>
+            <Button onClick={handleResetSearch}>
+              重置
+            </Button>
           </Space>
         </div>
 

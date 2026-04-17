@@ -13,7 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,15 +35,24 @@ public class ExpressAnalysisService {
 
     /**
      * 分页查询快递分析数据
+     * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
      */
     @Transactional(readOnly = true)
     public Page<ExpressAnalysisDTO> getExpressAnalysisList(
             String category, 
             LocalDateTime startDate, 
-            LocalDateTime endDate, 
+            LocalDateTime endDate,
+            String receiverAddress,
+            LocalDate sentTimeStart,
+            LocalDate sentTimeEnd,
             Pageable pageable) {
         
-        Page<ExpressAnalysis> page = expressAnalysisRepository.findByFilters(category, startDate, endDate, pageable);
+        // 转换日期格式为字符串（用于 JSON 字段查询）
+        String sentTimeStartStr = sentTimeStart != null ? sentTimeStart.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
+        String sentTimeEndStr = sentTimeEnd != null ? sentTimeEnd.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
+        
+        Page<ExpressAnalysis> page = expressAnalysisRepository.findByFilters(
+                category, startDate, endDate, receiverAddress, sentTimeStartStr, sentTimeEndStr, pageable);
         
         return page.map(this::convertToDTO);
     }

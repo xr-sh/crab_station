@@ -21,16 +21,104 @@ public interface ExpressAnalysisRepository extends JpaRepository<ExpressAnalysis
 
     /**
      * 分页查询快递分析数据
-     * 支持按类别、导入时间范围筛选
+     * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
+     * 
+     * 收件地址搜索：从 JSON 中提取地址字段，使用 COALESCE 获取第一个存在的地址值，然后 LIKE 模糊匹配
+     * 寄件时间搜索：检查每个时间字段是否在区间内，只要有一个字段满足范围条件即可
+     * 
+     * 注意：nativeQuery 分页查询需要手动指定 countQuery，否则 Spring Data JPA 会生成无效的 count(e.*)
      */
-    @Query("SELECT e FROM ExpressAnalysis e WHERE " +
+    @Query(value = "SELECT e.id, e.category, e.file_name, e.sheet_name, e.row_num, e.duration, e.duration_hours, " +
+           "e.dynamic_fields, e.imported_at, e.created_at, e.updated_at FROM express_analysis e WHERE " +
            "(:category IS NULL OR e.category = :category) AND " +
-           "(:startDate IS NULL OR e.importedAt >= :startDate) AND " +
-           "(:endDate IS NULL OR e.importedAt <= :endDate)")
+           "(:startDate IS NULL OR e.imported_at >= :startDate) AND " +
+           "(:endDate IS NULL OR e.imported_at <= :endDate) AND " +
+           // 收件地址：提取地址字段后模糊匹配
+           "(:receiverAddress IS NULL OR " +
+           "  COALESCE(" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件人地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收货地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收货人地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件人详细地址\"')), " +
+           "    ''" +
+           "  ) LIKE CONCAT('%', :receiverAddress, '%')) AND " +
+           // 寄件时间范围：检查每个时间字段是否在区间内（只要有一个满足即可）
+           "(:sentTimeStart IS NULL OR :sentTimeEnd IS NULL OR " +
+           "  (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) <= :sentTimeEnd" +
+           "  )" +
+           ")",
+           countQuery = "SELECT COUNT(*) FROM express_analysis e WHERE " +
+           "(:category IS NULL OR e.category = :category) AND " +
+           "(:startDate IS NULL OR e.imported_at >= :startDate) AND " +
+           "(:endDate IS NULL OR e.imported_at <= :endDate) AND " +
+           "(:receiverAddress IS NULL OR " +
+           "  COALESCE(" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件人地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收货地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收货人地址\"')), " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"收件人详细地址\"')), " +
+           "    ''" +
+           "  ) LIKE CONCAT('%', :receiverAddress, '%')) AND " +
+           "(:sentTimeStart IS NULL OR :sentTimeEnd IS NULL OR " +
+           "  (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"寄件日期\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发货日期\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出时间\"')) <= :sentTimeEnd" +
+           "  ) OR (" +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) IS NOT NULL AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) >= :sentTimeStart AND " +
+           "    JSON_UNQUOTE(JSON_EXTRACT(e.dynamic_fields, '$.\"发出日期\"')) <= :sentTimeEnd" +
+           "  )" +
+           ")",
+           nativeQuery = true)
     Page<ExpressAnalysis> findByFilters(
             @Param("category") String category,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
+            @Param("receiverAddress") String receiverAddress,
+            @Param("sentTimeStart") String sentTimeStart,
+            @Param("sentTimeEnd") String sentTimeEnd,
             Pageable pageable);
 
     /**

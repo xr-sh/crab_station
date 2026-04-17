@@ -18,8 +18,8 @@ const Home: React.FC = () => {
       <Title level={3}>欢迎回来，{user?.username || '用户'}！</Title>
       <Text type="secondary">这是工作站的首页，您可以在这里查看系统概况</Text>
 
-      <Row gutter={16} style={{ marginTop: 24 }}>
-        <Col span={6}>
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24} md={12} xl={6}>
           <Card>
             <Statistic
               title="总用户数"
@@ -28,7 +28,7 @@ const Home: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} md={12} xl={6}>
           <Card>
             <Statistic
               title="活跃用户"
@@ -38,7 +38,7 @@ const Home: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} md={12} xl={6}>
           <Card>
             <Statistic
               title="今日登录"
@@ -47,7 +47,7 @@ const Home: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} md={12} xl={6}>
           <Card>
             <Statistic
               title="当前用户"

@@ -1,11 +1,12 @@
 import React from 'react'
-import { Button, Form, Input, Card, Typography, message, Tabs } from 'antd'
+import { Button, Form, Input, Card, Typography, message, Tabs, Grid } from 'antd'
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { authApi, LoginRequest, RegisterRequest } from '../../api/auth'
 import { useAuthStore } from '../../stores/authStore'
 
 const { Title } = Typography
+const { useBreakpoint } = Grid
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
@@ -13,6 +14,11 @@ const Login: React.FC = () => {
   const [registerForm] = Form.useForm()
   const [activeTab, setActiveTab] = React.useState('login')
   const [loading, setLoading] = React.useState(false)
+  const screens = useBreakpoint()
+
+  // 响应式卡片宽度
+  const cardWidth = screens.md ? 400 : '95%'
+  const cardMaxWidth = 400
 
   const handleLogin = async (values: LoginRequest) => {
     setLoading(true)
@@ -176,8 +182,13 @@ const Login: React.FC = () => {
       justifyContent: 'center',
       alignItems: 'center',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: screens.md ? 0 : '16px',
     }}>
-      <Card style={{ width: 400, borderRadius: 8 }}>
+      <Card style={{ 
+        width: cardWidth, 
+        maxWidth: cardMaxWidth,
+        borderRadius: 8,
+      }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Title level={3} style={{ margin: 0 }}>工作站</Title>
         </div>
