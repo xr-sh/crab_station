@@ -59,6 +59,7 @@ export interface Statistics {
   fileCount: number
   columnCount: number
   categoryStats: Record<string, number>
+  averageFee: number
 }
 
 /**

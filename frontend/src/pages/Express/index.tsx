@@ -248,7 +248,7 @@ const Express: React.FC = () => {
     <div style={{ padding: isMobile ? 16 : 24 }}>
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="总记录数"
@@ -257,7 +257,7 @@ const Express: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="顺丰"
@@ -267,13 +267,24 @@ const Express: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="京东"
               value={statistics.categoryStats?.['京东'] || 0}
               suffix="条"
               valueStyle={{ color: '#f5222d' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="平均运费"
+              value={statistics.averageFee || 0}
+              suffix="元"
+              precision={2}
+              valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>

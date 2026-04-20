@@ -136,6 +136,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
           label="API Key"
           name="apiKey"
           rules={[
+            { required: true, message: '请输入API Key' },
             { max: 200, message: 'API Key最多200个字符' },
           ]}
         >

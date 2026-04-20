@@ -13,6 +13,7 @@ public class CreateApiConfigRequest {
     @Size(max = 100, message = "平台名称长度不能超过100")
     private String platformName;
 
+    @NotBlank(message = "API Key不能为空")
     @Size(max = 200, message = "API Key长度不能超过200")
     private String apiKey;
 

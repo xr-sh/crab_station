@@ -27,6 +27,7 @@ import {
   CarOutlined,
   ScheduleOutlined,
   ApiOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -66,7 +67,7 @@ const MainLayout: React.FC = () => {
     if (['/purchase-spec', '/platform-spec', '/specification-mapping'].includes(path)) {
       return ['spec']
     }
-    if (['/api-config'].includes(path)) {
+    if (['/api-config', '/scheduled-task'].includes(path)) {
       return ['task']
     }
     return []
@@ -143,6 +144,11 @@ const MainLayout: React.FC = () => {
           icon: <ApiOutlined />,
           label: 'API配置',
         },
+        {
+          key: '/scheduled-task',
+          icon: <ClockCircleOutlined />,
+          label: '定时任务',
+        },
       ],
     },
   ]
@@ -158,9 +164,16 @@ const MainLayout: React.FC = () => {
 
   // 菜单点击处理
   const handleMenuClick = (key: string) => {
-    navigate(key)
-    if (isMobile) {
-      setDrawerVisible(false)
+    console.log('[Menu Click] key:', key)
+    // 只处理实际路径（以 / 开头的 key），忽略父菜单项
+    if (key.startsWith('/')) {
+      console.log('[Menu Click] navigating to:', key)
+      navigate(key)
+      if (isMobile) {
+        setDrawerVisible(false)
+      }
+    } else {
+      console.log('[Menu Click] ignored (not a path)')
     }
   }
 

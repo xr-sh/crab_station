@@ -166,4 +166,37 @@ public interface ExpressAnalysisRepository extends JpaRepository<ExpressAnalysis
     @Modifying
     @Query("DELETE FROM ExpressAnalysis")
     void deleteAllInBatch();
+
+    /**
+     * 计算所有记录的平均运费
+     * 从 dynamicFields JSON 中提取运费字段（运费/费用/快递费/物流费/快递费用）
+     * 返回平均值（Double）
+     */
+    @Query(value = "SELECT AVG(CAST(" +
+            "COALESCE(" +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"运费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"费用\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"物流费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费用\"')), " +
+            "  NULL" +
+            ") AS DECIMAL(10,2))) " +
+            "FROM express_analysis " +
+            "WHERE dynamic_fields IS NOT NULL " +
+            "AND COALESCE(" +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"运费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"费用\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"物流费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费用\"'))" +
+            ") IS NOT NULL " +
+            "AND COALESCE(" +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"运费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"费用\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"物流费\"')), " +
+            "  JSON_UNQUOTE(JSON_EXTRACT(dynamic_fields, '$.\"快递费用\"'))" +
+            ") != ''",
+            nativeQuery = true)
+    Double findAverageFee();
 }

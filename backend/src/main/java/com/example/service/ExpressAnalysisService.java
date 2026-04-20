@@ -155,6 +155,14 @@ public class ExpressAnalysisService {
     }
 
     /**
+     * 计算所有记录的平均运费
+     */
+    @Transactional(readOnly = true)
+    public Double getAverageFee() {
+        return expressAnalysisRepository.findAverageFee();
+    }
+
+    /**
      * 转换为DTO
      */
     private ExpressAnalysisDTO convertToDTO(ExpressAnalysis entity) {

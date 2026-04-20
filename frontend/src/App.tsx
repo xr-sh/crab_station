@@ -12,6 +12,7 @@ import PlatformSpec from './pages/PlatformSpec'
 import SpecificationMapping from './pages/SpecificationMapping'
 import Express from './pages/Express'
 import ApiConfig from './pages/ApiConfig'
+import ScheduledTask from './pages/ScheduledTask'
 import PrivateRoute from './components/PrivateRoute'
 import MainLayout from './components/MainLayout'
 
@@ -38,6 +39,7 @@ const App: React.FC = () => {
             <Route path="platform-spec" element={<PlatformSpec />} />
             <Route path="specification-mapping" element={<SpecificationMapping />} />
             <Route path="api-config" element={<ApiConfig />} />
+            <Route path="scheduled-task" element={<ScheduledTask />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

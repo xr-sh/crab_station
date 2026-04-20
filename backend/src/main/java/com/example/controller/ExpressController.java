@@ -190,6 +190,9 @@ public class ExpressController {
         categoryStats.put("顺丰", expressAnalysisService.countByCategory("顺丰"));
         categoryStats.put("京东", expressAnalysisService.countByCategory("京东"));
         stats.put("categoryStats", categoryStats);
+        // 平均运费
+        Double averageFee = expressAnalysisService.getAverageFee();
+        stats.put("averageFee", averageFee != null ? Math.round(averageFee * 100) / 100.0 : 0.0);
         return ResponseEntity.ok(stats);
     }
 }
