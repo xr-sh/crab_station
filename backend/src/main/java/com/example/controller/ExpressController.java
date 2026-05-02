@@ -5,13 +5,14 @@ import com.example.dto.ImportResultDTO;
 import com.example.dto.PageResponse;
 import com.example.service.ExcelImportService;
 import com.example.service.ExpressAnalysisService;
+import com.example.util.PageRequestUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,45 +21,32 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-/**
- * 快递分析控制器
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/express")
 @RequiredArgsConstructor
-@CrossOrigin(
-    origins = {"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"},
-    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
-)
 public class ExpressController {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "imported_at", "created_at", "updated_at", "duration_hours", "category", "file_name"
+    );
 
     private final ExcelImportService excelImportService;
     private final ExpressAnalysisService expressAnalysisService;
 
-    /**
-     * 导入Excel文件（支持多文件上传）
-     */
     @PostMapping("/import")
     public ResponseEntity<List<ImportResultDTO>> importExcel(
             @RequestParam("files") MultipartFile[] files,
             @RequestParam("category") String category,
             @RequestParam(value = "hasHeader", defaultValue = "true") boolean hasHeader) {
-        
-        log.info("开始导入 {} 个文件, 类别: {}, 是否有表头: {}", files.length, category, hasHeader);
-        
-        List<ImportResultDTO> results = excelImportService.importExcelFiles(files, category, hasHeader);
-        
-        return ResponseEntity.ok(results);
+
+        log.info("Importing express files, count={}, category={}, hasHeader={}", files.length, category, hasHeader);
+        return ResponseEntity.ok(excelImportService.importExcelFiles(files, category, hasHeader));
     }
 
-    /**
-     * 分页查询快递分析数据
-     * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
-     */
     @GetMapping
     public ResponseEntity<PageResponse<ExpressAnalysisDTO>> getList(
             @RequestParam(defaultValue = "0") int page,
@@ -72,7 +60,6 @@ public class ExpressController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sentTimeStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sentTimeEnd) {
 
-        // Java 属性名到数据库列名的映射（原生 SQL 查询需要使用数据库列名）
         Map<String, String> fieldMapping = new HashMap<>();
         fieldMapping.put("importedAt", "imported_at");
         fieldMapping.put("createdAt", "created_at");
@@ -80,15 +67,9 @@ public class ExpressController {
         fieldMapping.put("durationHours", "duration_hours");
         fieldMapping.put("category", "category");
         fieldMapping.put("fileName", "file_name");
-        
-        // 转换排序字段名
-        String dbColumnName = fieldMapping.getOrDefault(sortBy, sortBy);
 
-        Sort sort = Sort.by(
-                sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, 
-                dbColumnName
-        );
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        String dbColumnName = fieldMapping.getOrDefault(sortBy, sortBy);
+        PageRequest pageRequest = PageRequestUtils.of(page, size, dbColumnName, sortDirection, ALLOWED_SORT_FIELDS);
 
         Page<ExpressAnalysisDTO> pageResult = expressAnalysisService.getExpressAnalysisList(
                 category, startDate, endDate, receiverAddress, sentTimeStart, sentTimeEnd, pageRequest
@@ -107,90 +88,58 @@ public class ExpressController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 获取单条记录
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ExpressAnalysisDTO> getById(@PathVariable UUID id) {
-        ExpressAnalysisDTO dto = expressAnalysisService.getById(id);
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(expressAnalysisService.getById(id));
     }
 
-    /**
-     * 获取所有列名（动态字段名）
-     */
     @GetMapping("/columns")
     public ResponseEntity<List<String>> getColumns() {
-        List<String> columns = expressAnalysisService.getAllColumnNames();
-        return ResponseEntity.ok(columns);
+        return ResponseEntity.ok(expressAnalysisService.getAllColumnNames());
     }
 
-    /**
-     * 获取所有文件名
-     */
     @GetMapping("/file-names")
     public ResponseEntity<List<String>> getFileNames() {
-        List<String> fileNames = expressAnalysisService.getAllFileNames();
-        return ResponseEntity.ok(fileNames);
+        return ResponseEntity.ok(expressAnalysisService.getAllFileNames());
     }
 
-    /**
-     * 获取所有快递类别
-     */
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
-        List<String> categories = expressAnalysisService.getAllCategories();
-        return ResponseEntity.ok(categories);
+        return ResponseEntity.ok(expressAnalysisService.getAllCategories());
     }
 
-    /**
-     * 删除单条记录
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable UUID id) {
         expressAnalysisService.delete(id);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "删除成功");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("message", "Deleted successfully"));
     }
 
-    /**
-     * 清空所有数据
-     */
     @DeleteMapping("/clear")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> clearAll() {
         expressAnalysisService.clearAll();
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "已清空所有数据");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("message", "All express data cleared"));
     }
 
-    /**
-     * 删除指定文件的所有记录
-     */
     @DeleteMapping("/file/{fileName}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> deleteByFileName(@PathVariable String fileName) {
         expressAnalysisService.deleteByFileName(fileName);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "已删除该文件的所有记录");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("message", "File records deleted"));
     }
 
-    /**
-     * 统计信息
-     */
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getStatistics() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalRecords", expressAnalysisService.count());
         stats.put("fileCount", expressAnalysisService.getAllFileNames().size());
         stats.put("columnCount", expressAnalysisService.getAllColumnNames().size());
-        // 按类别统计
+
         Map<String, Long> categoryStats = new HashMap<>();
-        categoryStats.put("顺丰", expressAnalysisService.countByCategory("顺丰"));
-        categoryStats.put("京东", expressAnalysisService.countByCategory("京东"));
+        categoryStats.put("\u987a\u4e30", expressAnalysisService.countByCategory("\u987a\u4e30"));
+        categoryStats.put("\u4eac\u4e1c", expressAnalysisService.countByCategory("\u4eac\u4e1c"));
         stats.put("categoryStats", categoryStats);
-        // 平均运费
+
         Double averageFee = expressAnalysisService.getAverageFee();
         stats.put("averageFee", averageFee != null ? Math.round(averageFee * 100) / 100.0 : 0.0);
         return ResponseEntity.ok(stats);

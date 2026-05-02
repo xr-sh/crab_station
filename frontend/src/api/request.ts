@@ -18,11 +18,9 @@ const getToken = (): string | null => {
       const parsed = JSON.parse(authStorage)
       const token = parsed.state?.token
       if (token) {
-        console.log('[Request] Token found:', token.substring(0, 20) + '...')
         return token
       }
     }
-    console.log('[Request] No token found')
   } catch (e) {
     console.error('[Request] Failed to parse auth-storage:', e)
   }
@@ -35,9 +33,6 @@ request.interceptors.request.use(
     const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
-      console.log('[Request] Auth header set for:', config.url)
-    } else {
-      console.warn('[Request] No token for:', config.url)
     }
     return config
   },
@@ -56,7 +51,8 @@ request.interceptors.response.use(
       useAuthStore.getState().logout()
       window.location.href = '/login'
     }
-    return Promise.reject(error.response?.data || error.message)
+    const data: any = error.response?.data
+    return Promise.reject(data?.message ? data : { message: error.message })
   }
 )
 

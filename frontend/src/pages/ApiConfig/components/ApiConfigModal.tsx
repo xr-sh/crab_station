@@ -32,8 +32,8 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
       if (config) {
         form.setFieldsValue({
           platformName: config.platformName,
-          apiKey: config.apiKey,
-          secret: config.secret,
+          apiKey: config.apiKey?.includes('****') ? undefined : config.apiKey,
+          secret: config.secret?.includes('****') ? undefined : config.secret,
           baseUrl: config.baseUrl,
           status: config.status === 1,
           remark: config.remark,
@@ -77,7 +77,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
       // 构建动态配置对象
       const dynamicConfig: Record<string, any> = {}
       dynamicFields.forEach(field => {
-        if (field.key && field.value) {
+        if (field.key) {
           dynamicConfig[field.key] = field.value
         }
       })
@@ -85,7 +85,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
       const submitData = {
         ...values,
         status: values.status ? 1 : 0,
-        dynamicConfig: dynamicFields.length > 0 ? dynamicConfig : undefined,
+        dynamicConfig,
       }
 
       if (isEditing) {
@@ -136,7 +136,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
           label="API Key"
           name="apiKey"
           rules={[
-            { required: true, message: '请输入API Key' },
+            { required: !isEditing, message: '请输入API Key' },
             { max: 200, message: 'API Key最多200个字符' },
           ]}
         >

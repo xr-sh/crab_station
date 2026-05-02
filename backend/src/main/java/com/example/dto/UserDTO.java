@@ -15,6 +15,7 @@ public class UserDTO {
     private String phone;
     private String avatar;
     private Integer status;
+    private String role;
     private LocalDateTime lastLoginTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

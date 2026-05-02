@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface PurchaseItemRepository extends JpaRepository<PurchaseItem, UUID> {
     List<PurchaseItem> findByPurchaseId(UUID purchaseId);
     void deleteByPurchaseId(UUID purchaseId);
+    long countByPurchaseSpec_Id(UUID purchaseSpecId);
 }

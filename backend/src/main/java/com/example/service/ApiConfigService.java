@@ -3,6 +3,7 @@ package com.example.service;
 import com.example.dto.CreateApiConfigRequest;
 import com.example.dto.UpdateApiConfigRequest;
 import com.example.entity.ApiConfig;
+import com.example.exception.BusinessException;
 import com.example.repository.ApiConfigRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -37,19 +38,19 @@ public class ApiConfigService {
     @Transactional(readOnly = true)
     public ApiConfig getApiConfigById(UUID id) {
         return apiConfigRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("API配置不存在"));
+                .orElseThrow(() -> new BusinessException("API config does not exist"));
     }
 
     @Transactional(readOnly = true)
     public ApiConfig getApiConfigByPlatformName(String platformName) {
         return apiConfigRepository.findByPlatformName(platformName)
-                .orElseThrow(() -> new RuntimeException("平台API配置不存在: " + platformName));
+                .orElseThrow(() -> new BusinessException("API config does not exist: " + platformName));
     }
 
     @Transactional
     public ApiConfig createApiConfig(CreateApiConfigRequest request) {
         if (apiConfigRepository.existsByPlatformName(request.getPlatformName())) {
-            throw new RuntimeException("该平台的API配置已存在");
+            throw new BusinessException("API config for platform already exists");
         }
 
         ApiConfig config = ApiConfig.builder()
@@ -70,11 +71,10 @@ public class ApiConfigService {
 
         if (request.getPlatformName() != null && !request.getPlatformName().equals(config.getPlatformName())) {
             if (apiConfigRepository.existsByPlatformName(request.getPlatformName())) {
-                throw new RuntimeException("该平台的API配置已存在");
+                throw new BusinessException("API config for platform already exists");
             }
             config.setPlatformName(request.getPlatformName());
         }
-
         if (request.getApiKey() != null) {
             config.setApiKey(request.getApiKey());
         }
@@ -99,8 +99,7 @@ public class ApiConfigService {
 
     @Transactional
     public void deleteApiConfig(UUID id) {
-        ApiConfig config = getApiConfigById(id);
-        apiConfigRepository.delete(config);
+        apiConfigRepository.delete(getApiConfigById(id));
     }
 
     private String convertDynamicConfigToJson(Map<String, Object> dynamicConfig) {
@@ -110,7 +109,7 @@ public class ApiConfigService {
         try {
             return objectMapper.writeValueAsString(dynamicConfig);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("动态配置JSON转换失败: " + e.getMessage());
+            throw new BusinessException("Failed to serialize dynamic config: " + e.getMessage());
         }
     }
 
@@ -121,7 +120,17 @@ public class ApiConfigService {
         try {
             return objectMapper.readValue(dynamicConfigJson, new TypeReference<Map<String, Object>>() {});
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("动态配置JSON解析失败: " + e.getMessage());
+            throw new BusinessException("Failed to parse dynamic config: " + e.getMessage());
         }
+    }
+
+    public String maskSecret(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        if (value.length() <= 8) {
+            return "****";
+        }
+        return value.substring(0, 4) + "****" + value.substring(value.length() - 4);
     }
 }

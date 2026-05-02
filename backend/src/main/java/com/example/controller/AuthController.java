@@ -3,7 +3,6 @@ package com.example.controller;
 import com.example.dto.LoginRequest;
 import com.example.dto.LoginResponse;
 import com.example.dto.RegisterRequest;
-import com.example.entity.User;
 import com.example.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +37,15 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = authService.getCurrentUser(userDetails.getUsername());
-        return ResponseEntity.ok(user);
+    public ResponseEntity<LoginResponse.UserInfo> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        var user = authService.getCurrentUser(userDetails.getUsername());
+        return ResponseEntity.ok(LoginResponse.UserInfo.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .avatar(user.getAvatar())
+                .role(user.getRole())
+                .build());
     }
 
     @PostMapping("/logout")

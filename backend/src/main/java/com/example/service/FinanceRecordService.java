@@ -1,7 +1,6 @@
 package com.example.service;
 
 import com.example.dto.CreateFinanceRecordRequest;
-import com.example.dto.FinanceRecordDTO;
 import com.example.dto.UpdateFinanceRecordRequest;
 import com.example.entity.FinanceRecord;
 import com.example.repository.FinanceRecordRepository;
@@ -28,7 +27,7 @@ public class FinanceRecordService {
     @Transactional(readOnly = true)
     public FinanceRecord getFinanceRecordById(UUID id) {
         return financeRecordRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("财务记录不存在"));
+                .orElseThrow(() -> new RuntimeException("Finance record does not exist"));
     }
 
     @Transactional
@@ -45,7 +44,7 @@ public class FinanceRecordService {
     @Transactional
     public FinanceRecord updateFinanceRecord(UUID id, UpdateFinanceRecordRequest request) {
         FinanceRecord record = getFinanceRecordById(id);
-        
+
         if (request.getRecordDate() != null) {
             record.setRecordDate(request.getRecordDate());
         }
@@ -58,13 +57,12 @@ public class FinanceRecordService {
         if (request.getRemark() != null) {
             record.setRemark(request.getRemark());
         }
-        
+
         return financeRecordRepository.save(record);
     }
 
     @Transactional
     public void deleteFinanceRecord(UUID id) {
-        FinanceRecord record = getFinanceRecordById(id);
-        financeRecordRepository.delete(record);
+        financeRecordRepository.delete(getFinanceRecordById(id));
     }
 }

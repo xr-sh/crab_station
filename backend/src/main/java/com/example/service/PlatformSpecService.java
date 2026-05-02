@@ -3,7 +3,9 @@ package com.example.service;
 import com.example.dto.CreatePlatformSpecRequest;
 import com.example.dto.UpdatePlatformSpecRequest;
 import com.example.entity.PlatformSpec;
+import com.example.exception.BusinessException;
 import com.example.repository.PlatformSpecRepository;
+import com.example.repository.SpecificationMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class PlatformSpecService {
 
     private final PlatformSpecRepository platformSpecRepository;
+    private final SpecificationMappingRepository specificationMappingRepository;
 
     @Transactional(readOnly = true)
     public Page<PlatformSpec> getPlatformSpecs(String name, Integer status, Pageable pageable) {
@@ -32,13 +35,13 @@ public class PlatformSpecService {
     @Transactional(readOnly = true)
     public PlatformSpec getPlatformSpecById(UUID id) {
         return platformSpecRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("平台规格不存在"));
+                .orElseThrow(() -> new RuntimeException("Platform spec does not exist"));
     }
 
     @Transactional
     public PlatformSpec createPlatformSpec(CreatePlatformSpecRequest request) {
         if (platformSpecRepository.existsByName(request.getName())) {
-            throw new RuntimeException("平台规格名称已存在");
+            throw new RuntimeException("Platform spec name already exists");
         }
 
         PlatformSpec spec = PlatformSpec.builder()
@@ -55,7 +58,7 @@ public class PlatformSpecService {
 
         if (request.getName() != null && !request.getName().equals(spec.getName())) {
             if (platformSpecRepository.existsByName(request.getName())) {
-                throw new RuntimeException("平台规格名称已存在");
+                throw new RuntimeException("Platform spec name already exists");
             }
             spec.setName(request.getName());
         }
@@ -73,6 +76,9 @@ public class PlatformSpecService {
     @Transactional
     public void deletePlatformSpec(UUID id) {
         PlatformSpec spec = getPlatformSpecById(id);
+        if (specificationMappingRepository.countByPlatformSpec_Id(id) > 0) {
+            throw new BusinessException("Platform spec is in use and cannot be deleted");
+        }
         platformSpecRepository.delete(spec);
     }
 }

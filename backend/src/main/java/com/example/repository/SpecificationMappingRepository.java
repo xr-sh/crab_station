@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -25,4 +26,12 @@ public interface SpecificationMappingRepository extends JpaRepository<Specificat
                                              @Param("platformSpecName") String platformSpecName,
                                              @Param("status") Integer status,
                                              Pageable pageable);
+
+    boolean existsByPurchaseSpec_IdAndPlatformSpec_Id(UUID purchaseSpecId, UUID platformSpecId);
+
+    Optional<SpecificationMapping> findByPurchaseSpec_IdAndPlatformSpec_Id(UUID purchaseSpecId, UUID platformSpecId);
+
+    long countByPurchaseSpec_Id(UUID purchaseSpecId);
+
+    long countByPlatformSpec_Id(UUID platformSpecId);
 }

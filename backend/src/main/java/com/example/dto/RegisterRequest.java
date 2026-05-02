@@ -8,18 +8,18 @@ import lombok.Data;
 @Data
 public class RegisterRequest {
 
-    @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 50, message = "用户名长度必须在3-50个字符之间")
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username length must be between 3 and 50 characters")
     private String username;
 
-    @NotBlank(message = "密码不能为空")
-    @Size(min = 6, max = 100, message = "密码长度必须在6-100个字符之间")
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, max = 100, message = "Password length must be between 6 and 100 characters")
     private String password;
 
-    @NotBlank(message = "确认密码不能为空")
+    @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
-    @Email(message = "邮箱格式不正确")
+    @Email(message = "Invalid email format")
     private String email;
 
     private String phone;

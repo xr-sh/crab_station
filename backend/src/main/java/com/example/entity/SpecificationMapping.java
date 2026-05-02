@@ -11,7 +11,10 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "specification_mappings")
+@Table(name = "specification_mappings",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_specification_mapping_specs",
+                columnNames = {"purchase_spec_id", "platform_spec_id"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

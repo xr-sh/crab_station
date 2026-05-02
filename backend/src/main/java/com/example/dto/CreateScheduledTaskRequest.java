@@ -6,24 +6,24 @@ import lombok.Data;
 
 @Data
 public class CreateScheduledTaskRequest {
-    
-    @NotBlank(message = "任务名称不能为空")
-    @Size(max = 100, message = "任务名称长度不能超过100")
+
+    @NotBlank(message = "Task name is required")
+    @Size(max = 100, message = "Task name must be at most 100 characters")
     private String taskName;
 
-    @NotBlank(message = "任务类型不能为空")
-    @Size(max = 50, message = "任务类型长度不能超过50")
+    @NotBlank(message = "Task type is required")
+    @Size(max = 50, message = "Task type must be at most 50 characters")
     private String taskType;
 
-    @NotBlank(message = "Cron表达式不能为空")
-    @Size(max = 100, message = "Cron表达式长度不能超过100")
+    @NotBlank(message = "Cron expression is required")
+    @Size(max = 100, message = "Cron expression must be at most 100 characters")
     private String cronExpression;
 
-    @Size(max = 2000, message = "任务参数长度不能超过2000")
+    @Size(max = 2000, message = "Task params must be at most 2000 characters")
     private String taskParams;
 
     private Integer status;
 
-    @Size(max = 500, message = "备注长度不能超过500")
+    @Size(max = 500, message = "Remark must be at most 500 characters")
     private String remark;
 }

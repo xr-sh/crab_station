@@ -46,6 +46,7 @@ const Express: React.FC = () => {
     fileCount: 0,
     columnCount: 0,
     categoryStats: {},
+    averageFee: 0,
   })
   const [sorter, setSorter] = useState<{
     field: string | null,

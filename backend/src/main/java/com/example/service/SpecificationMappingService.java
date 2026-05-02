@@ -5,6 +5,7 @@ import com.example.dto.UpdateSpecificationMappingRequest;
 import com.example.entity.PlatformSpec;
 import com.example.entity.PurchaseSpec;
 import com.example.entity.SpecificationMapping;
+import com.example.exception.BusinessException;
 import com.example.repository.PlatformSpecRepository;
 import com.example.repository.PurchaseSpecRepository;
 import com.example.repository.SpecificationMappingRepository;
@@ -32,19 +33,19 @@ public class SpecificationMappingService {
     @Transactional(readOnly = true)
     public SpecificationMapping getSpecificationMappingById(UUID id) {
         return specificationMappingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("规格映射不存在"));
+                .orElseThrow(() -> new BusinessException("Specification mapping does not exist"));
     }
 
     @Transactional
     public SpecificationMapping createSpecificationMapping(CreateSpecificationMappingRequest request) {
-        PurchaseSpec purchaseSpec = purchaseSpecRepository.findById(request.getPurchaseSpecId())
-                .orElseThrow(() -> new RuntimeException("进货规格不存在"));
-        PlatformSpec platformSpec = platformSpecRepository.findById(request.getPlatformSpecId())
-                .orElseThrow(() -> new RuntimeException("平台规格不存在"));
+        if (specificationMappingRepository.existsByPurchaseSpec_IdAndPlatformSpec_Id(
+                request.getPurchaseSpecId(), request.getPlatformSpecId())) {
+            throw new BusinessException("Specification mapping already exists");
+        }
 
         SpecificationMapping mapping = SpecificationMapping.builder()
-                .purchaseSpec(purchaseSpec)
-                .platformSpec(platformSpec)
+                .purchaseSpec(getPurchaseSpec(request.getPurchaseSpecId()))
+                .platformSpec(getPlatformSpec(request.getPlatformSpecId()))
                 .status(request.getStatus() != null ? request.getStatus() : 1)
                 .remark(request.getRemark())
                 .build();
@@ -56,14 +57,10 @@ public class SpecificationMappingService {
         SpecificationMapping mapping = getSpecificationMappingById(id);
 
         if (request.getPurchaseSpecId() != null) {
-            PurchaseSpec purchaseSpec = purchaseSpecRepository.findById(request.getPurchaseSpecId())
-                    .orElseThrow(() -> new RuntimeException("进货规格不存在"));
-            mapping.setPurchaseSpec(purchaseSpec);
+            mapping.setPurchaseSpec(getPurchaseSpec(request.getPurchaseSpecId()));
         }
         if (request.getPlatformSpecId() != null) {
-            PlatformSpec platformSpec = platformSpecRepository.findById(request.getPlatformSpecId())
-                    .orElseThrow(() -> new RuntimeException("平台规格不存在"));
-            mapping.setPlatformSpec(platformSpec);
+            mapping.setPlatformSpec(getPlatformSpec(request.getPlatformSpecId()));
         }
         if (request.getStatus() != null) {
             mapping.setStatus(request.getStatus());
@@ -72,12 +69,28 @@ public class SpecificationMappingService {
             mapping.setRemark(request.getRemark());
         }
 
+        specificationMappingRepository.findByPurchaseSpec_IdAndPlatformSpec_Id(
+                        mapping.getPurchaseSpec().getId(), mapping.getPlatformSpec().getId())
+                .filter(existing -> !existing.getId().equals(mapping.getId()))
+                .ifPresent(existing -> {
+                    throw new BusinessException("Specification mapping already exists");
+                });
+
         return specificationMappingRepository.save(mapping);
     }
 
     @Transactional
     public void deleteSpecificationMapping(UUID id) {
-        SpecificationMapping mapping = getSpecificationMappingById(id);
-        specificationMappingRepository.delete(mapping);
+        specificationMappingRepository.delete(getSpecificationMappingById(id));
+    }
+
+    private PurchaseSpec getPurchaseSpec(UUID id) {
+        return purchaseSpecRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Purchase spec does not exist"));
+    }
+
+    private PlatformSpec getPlatformSpec(UUID id) {
+        return platformSpecRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Platform spec does not exist"));
     }
 }

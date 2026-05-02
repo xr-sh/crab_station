@@ -3,11 +3,11 @@ package com.example.controller;
 import com.example.dto.*;
 import com.example.entity.PurchaseRecord;
 import com.example.service.PurchaseService;
+import com.example.util.PageRequestUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class PurchaseController {
 
     private final PurchaseService purchaseService;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("purchaseDate", "supplier", "totalWeight", "totalAmount", "createdAt", "updatedAt");
 
     @GetMapping
     public ResponseEntity<PageResponse<PurchaseRecordDTO>> getPurchaseRecords(
@@ -37,8 +39,7 @@ public class PurchaseController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        Sort sort = Sort.by(sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        PageRequest pageRequest = PageRequestUtils.of(page, size, sortBy, sortDirection, ALLOWED_SORT_FIELDS);
 
         Page<PurchaseRecord> recordPage = purchaseService.getPurchaseRecords(supplier, startDate, endDate, pageRequest);
 

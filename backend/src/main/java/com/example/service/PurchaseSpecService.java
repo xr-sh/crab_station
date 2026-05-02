@@ -3,7 +3,10 @@ package com.example.service;
 import com.example.dto.CreatePurchaseSpecRequest;
 import com.example.dto.UpdatePurchaseSpecRequest;
 import com.example.entity.PurchaseSpec;
+import com.example.exception.BusinessException;
+import com.example.repository.PurchaseItemRepository;
 import com.example.repository.PurchaseSpecRepository;
+import com.example.repository.SpecificationMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,8 @@ import java.util.UUID;
 public class PurchaseSpecService {
 
     private final PurchaseSpecRepository purchaseSpecRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final SpecificationMappingRepository specificationMappingRepository;
 
     @Transactional(readOnly = true)
     public Page<PurchaseSpec> getPurchaseSpecs(String name, Integer status, Pageable pageable) {
@@ -32,13 +37,13 @@ public class PurchaseSpecService {
     @Transactional(readOnly = true)
     public PurchaseSpec getPurchaseSpecById(UUID id) {
         return purchaseSpecRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("进货规格不存在"));
+                .orElseThrow(() -> new RuntimeException("Purchase spec does not exist"));
     }
 
     @Transactional
     public PurchaseSpec createPurchaseSpec(CreatePurchaseSpecRequest request) {
         if (purchaseSpecRepository.existsByName(request.getName())) {
-            throw new RuntimeException("进货规格名称已存在");
+            throw new RuntimeException("Purchase spec name already exists");
         }
 
         PurchaseSpec spec = PurchaseSpec.builder()
@@ -55,7 +60,7 @@ public class PurchaseSpecService {
 
         if (request.getName() != null && !request.getName().equals(spec.getName())) {
             if (purchaseSpecRepository.existsByName(request.getName())) {
-                throw new RuntimeException("进货规格名称已存在");
+                throw new RuntimeException("Purchase spec name already exists");
             }
             spec.setName(request.getName());
         }
@@ -73,6 +78,10 @@ public class PurchaseSpecService {
     @Transactional
     public void deletePurchaseSpec(UUID id) {
         PurchaseSpec spec = getPurchaseSpecById(id);
+        if (purchaseItemRepository.countByPurchaseSpec_Id(id) > 0
+                || specificationMappingRepository.countByPurchaseSpec_Id(id) > 0) {
+            throw new BusinessException("Purchase spec is in use and cannot be deleted");
+        }
         purchaseSpecRepository.delete(spec);
     }
 }

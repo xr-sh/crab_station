@@ -6,29 +6,29 @@ spring:
     name: auth-demo
 
   datasource:
-    url: jdbc:mysql://localhost:3306/crab_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useUnicode=true
-    username: root
-    password: 123456
+    url: ${DB_URL:jdbc:mysql://localhost:3306/crab_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useUnicode=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-# JWT配置
 jwt:
-  secret: mySecretKey123456789012345678901234567890
-  expiration: 86400000  # 24小时，单位毫秒
-  header: Authorization
+  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+  expiration: ${JWT_EXPIRATION:86400000}
   prefix: "Bearer "
 
-# 日志配置
+app:
+  registration-enabled: ${REGISTRATION_ENABLED:true}
+
 logging:
   level:
-    com.example: DEBUG
-    org.springframework.security: DEBUG
+    com.example: ${APP_LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}

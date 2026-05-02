@@ -39,6 +39,9 @@ public class User {
     @Column(nullable = false)
     private Integer status = 1;
 
+    @Column(nullable = false, length = 20)
+    private String role = "USER";
+
     @Column(name = "last_login_time")
     private LocalDateTime lastLoginTime;
 
@@ -52,6 +55,12 @@ public class User {
     protected void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
+        }
+        if (status == null) {
+            status = 1;
+        }
+        if (role == null || role.isBlank()) {
+            role = "USER";
         }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();

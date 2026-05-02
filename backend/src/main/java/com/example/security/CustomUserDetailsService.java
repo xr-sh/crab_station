@@ -26,10 +26,15 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User account is disabled");
         }
 
+        String role = user.getRole() == null || user.getRole().isBlank() ? "USER" : user.getRole();
+        if (userRepository.countByRoleAndStatus("ADMIN", 1) == 0) {
+            role = "ADMIN";
+        }
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
         );
     }
 }

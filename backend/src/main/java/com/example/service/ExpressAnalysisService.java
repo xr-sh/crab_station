@@ -16,169 +16,144 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * 快递分析服务
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExpressAnalysisService {
 
+    private static final List<String> FEE_FIELD_NAMES = Arrays.asList(
+            "\u8fd0\u8d39", "\u8d39\u7528", "\u5feb\u9012\u8d39", "\u7269\u6d41\u8d39", "\u5feb\u9012\u8d39\u7528",
+            "fee", "shippingFee", "expressFee");
+
     private final ExpressAnalysisRepository expressAnalysisRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 分页查询快递分析数据
-     * 支持按类别、导入时间范围、收件地址模糊搜索、寄件时间范围筛选
-     */
     @Transactional(readOnly = true)
     public Page<ExpressAnalysisDTO> getExpressAnalysisList(
-            String category, 
-            LocalDateTime startDate, 
+            String category,
+            LocalDateTime startDate,
             LocalDateTime endDate,
             String receiverAddress,
             LocalDate sentTimeStart,
             LocalDate sentTimeEnd,
             Pageable pageable) {
-        
-        // 转换日期格式为字符串（用于 JSON 字段查询）
+
         String sentTimeStartStr = sentTimeStart != null ? sentTimeStart.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
         String sentTimeEndStr = sentTimeEnd != null ? sentTimeEnd.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
-        
-        Page<ExpressAnalysis> page = expressAnalysisRepository.findByFilters(
-                category, startDate, endDate, receiverAddress, sentTimeStartStr, sentTimeEndStr, pageable);
-        
-        return page.map(this::convertToDTO);
+
+        return expressAnalysisRepository.findByFilters(
+                category, startDate, endDate, receiverAddress, sentTimeStartStr, sentTimeEndStr, pageable
+        ).map(this::convertToDTO);
     }
 
-    /**
-     * 根据ID获取单条记录
-     */
     @Transactional(readOnly = true)
     public ExpressAnalysisDTO getById(UUID id) {
         ExpressAnalysis entity = expressAnalysisRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("记录不存在"));
+                .orElseThrow(() -> new RuntimeException("Record does not exist"));
         return convertToDTO(entity);
     }
 
-    /**
-     * 获取所有列名（动态字段名）
-     */
     @Transactional(readOnly = true)
     public List<String> getAllColumnNames() {
-        // 从所有记录中提取动态字段的key
-        List<ExpressAnalysis> allRecords = expressAnalysisRepository.findAll();
-        
-        return allRecords.stream()
-                .flatMap(record -> {
-                    try {
-                        Map<String, Object> fields = objectMapper.readValue(
-                                record.getDynamicFields(), 
-                                new TypeReference<Map<String, Object>>() {}
-                        );
-                        return fields.keySet().stream();
-                    } catch (JsonProcessingException e) {
-                        log.error("解析动态字段失败", e);
-                        return java.util.stream.Stream.empty();
-                    }
-                })
+        return expressAnalysisRepository.findAll().stream()
+                .flatMap(record -> parseDynamicFields(record).keySet().stream())
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 获取所有文件名
-     */
     @Transactional(readOnly = true)
     public List<String> getAllFileNames() {
         return expressAnalysisRepository.findAllFileNames();
     }
 
-    /**
-     * 获取所有类别
-     */
     @Transactional(readOnly = true)
     public List<String> getAllCategories() {
         return expressAnalysisRepository.findAllCategories();
     }
 
-    /**
-     * 删除单条记录
-     */
     @Transactional
     public void delete(UUID id) {
         ExpressAnalysis entity = expressAnalysisRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("记录不存在"));
+                .orElseThrow(() -> new RuntimeException("Record does not exist"));
         expressAnalysisRepository.delete(entity);
     }
 
-    /**
-     * 清空所有数据
-     * 使用批量删除避免乐观锁冲突
-     */
     @Transactional
     public void clearAll() {
         expressAnalysisRepository.deleteAllInBatch();
-        log.info("已清空所有快递分析数据");
+        log.info("Cleared all express analysis data");
     }
 
-    /**
-     * 删除指定文件名的所有记录
-     */
     @Transactional
     public void deleteByFileName(String fileName) {
         expressAnalysisRepository.deleteByFileName(fileName);
-        log.info("已删除文件 {} 的所有记录", fileName);
+        log.info("Deleted express analysis records for file={}", fileName);
     }
 
-    /**
-     * 统计总数
-     */
     @Transactional(readOnly = true)
     public long count() {
         return expressAnalysisRepository.count();
     }
 
-    /**
-     * 按类别统计数量
-     */
     @Transactional(readOnly = true)
     public long countByCategory(String category) {
         return expressAnalysisRepository.countByCategory(category);
     }
 
-    /**
-     * 计算所有记录的平均运费
-     */
     @Transactional(readOnly = true)
     public Double getAverageFee() {
-        return expressAnalysisRepository.findAverageFee();
-    }
+        List<Double> fees = expressAnalysisRepository.findAll().stream()
+                .map(this::extractFee)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toList());
 
-    /**
-     * 转换为DTO
-     */
-    private ExpressAnalysisDTO convertToDTO(ExpressAnalysis entity) {
-        Map<String, Object> dynamicFields = new HashMap<>();
-        
-        try {
-            if (entity.getDynamicFields() != null) {
-                dynamicFields = objectMapper.readValue(
-                        entity.getDynamicFields(), 
-                        new TypeReference<Map<String, Object>>() {}
-                );
-            }
-        } catch (JsonProcessingException e) {
-            log.error("解析动态字段失败", e);
+        if (fees.isEmpty()) {
+            return 0.0;
         }
 
+        double total = fees.stream().mapToDouble(Double::doubleValue).sum();
+        return total / fees.size();
+    }
+
+    private Optional<Double> extractFee(ExpressAnalysis entity) {
+        Map<String, Object> fields = parseDynamicFields(entity);
+        return FEE_FIELD_NAMES.stream()
+                .map(fields::get)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .map(this::parseAmount)
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
+    private Optional<Double> parseAmount(String value) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
+
+        String normalized = value.replaceAll("[^0-9.\\-]", "");
+        if (normalized.isBlank() || "-".equals(normalized) || ".".equals(normalized)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(Double.parseDouble(normalized));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    private ExpressAnalysisDTO convertToDTO(ExpressAnalysis entity) {
         return ExpressAnalysisDTO.builder()
                 .id(entity.getId())
                 .category(entity.getCategory())
@@ -187,10 +162,23 @@ public class ExpressAnalysisService {
                 .rowNum(entity.getRowNum())
                 .duration(entity.getDuration())
                 .durationHours(entity.getDurationHours())
-                .dynamicFields(dynamicFields)
+                .dynamicFields(parseDynamicFields(entity))
                 .importedAt(entity.getImportedAt())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    private Map<String, Object> parseDynamicFields(ExpressAnalysis entity) {
+        if (entity.getDynamicFields() == null || entity.getDynamicFields().isBlank()) {
+            return new HashMap<>();
+        }
+
+        try {
+            return objectMapper.readValue(entity.getDynamicFields(), new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse dynamic fields for express record={}", entity.getId(), e);
+            return new HashMap<>();
+        }
     }
 }

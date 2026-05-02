@@ -3,17 +3,18 @@ package com.example.controller;
 import com.example.dto.*;
 import com.example.entity.PurchaseSpec;
 import com.example.service.PurchaseSpecService;
+import com.example.util.PageRequestUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class PurchaseSpecController {
 
     private final PurchaseSpecService purchaseSpecService;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "name", "status");
 
     @GetMapping
     public ResponseEntity<PageResponse<PurchaseSpecDTO>> getPurchaseSpecs(
@@ -34,8 +36,7 @@ public class PurchaseSpecController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer status) {
 
-        Sort sort = Sort.by(sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        PageRequest pageRequest = PageRequestUtils.of(page, size, sortBy, sortDirection, ALLOWED_SORT_FIELDS);
 
         Page<PurchaseSpec> specPage = purchaseSpecService.getPurchaseSpecs(name, status, pageRequest);
 

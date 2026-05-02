@@ -19,10 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Excel导入服务
- * 支持多文件上传和动态列识别
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,79 +26,54 @@ public class ExcelImportService {
 
     private final ExpressAnalysisRepository expressAnalysisRepository;
 
-    /**
-     * 批量导入Excel文件
-     * 
-     * @param files 上传的文件列表
-     * @param category 快递类别（顺丰/京东）
-     * @param hasHeader 是否包含表头行
-     * @return 导入结果列表
-     */
     @Transactional
     public List<ImportResultDTO> importExcelFiles(MultipartFile[] files, String category, boolean hasHeader) {
         List<ImportResultDTO> results = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            ImportResultDTO result = importSingleFile(file, category, hasHeader);
-            results.add(result);
+            results.add(importSingleFile(file, category, hasHeader));
         }
 
         return results;
     }
 
-    /**
-     * 导入单个Excel文件
-     */
     @Transactional
     public ImportResultDTO importSingleFile(MultipartFile file, String category, boolean hasHeader) {
         String fileName = file.getOriginalFilename();
-        
+
         try {
-            log.info("开始导入文件: {}, 类别: {}, 是否有表头: {}", fileName, category, hasHeader);
+            log.info("Importing file={}, category={}, hasHeader={}", fileName, category, hasHeader);
 
-            // 创建监听器
             DynamicExcelListener listener = new DynamicExcelListener(fileName, category, hasHeader);
-
-            // 使用EasyExcel读取文件
-            // headRowNumber(0) 表示从第0行开始读取，不跳过任何行（让监听器自己处理表头）
             ExcelReader excelReader = EasyExcel.read(file.getInputStream(), listener)
                     .headRowNumber(0)
                     .build();
 
-            // 获取所有Sheet
             List<ReadSheet> sheets = excelReader.excelExecutor().sheetList();
-            
+
             int totalRows = 0;
             int successRows = 0;
             int failedRows = 0;
             Set<String> allColumns = new HashSet<>();
             List<String> allErrors = new ArrayList<>();
 
-            // 遍历所有Sheet
             for (int i = 0; i < sheets.size(); i++) {
                 ReadSheet sheet = sheets.get(i);
-                
-                // 为每个Sheet创建新的监听器实例
                 DynamicExcelListener sheetListener = new DynamicExcelListener(fileName, category, hasHeader);
                 sheetListener.setSheetName(sheet.getSheetName());
                 sheetListener.setSheetIndex(i);
 
-                // 重新创建reader并读取当前sheet
-                // headRowNumber(0) 表示从第0行开始读取，不跳过任何行
                 ExcelReader sheetReader = EasyExcel.read(file.getInputStream(), sheetListener)
                         .headRowNumber(0)
                         .build();
                 sheetReader.read(sheet);
 
-                // 收集数据
                 List<ExpressAnalysis> sheetData = sheetListener.getDataList();
                 if (!sheetData.isEmpty()) {
-                    // 批量保存
                     expressAnalysisRepository.saveAll(sheetData);
-                    log.info("Sheet [{}] 保存了 {} 条数据", sheet.getSheetName(), sheetData.size());
+                    log.info("Saved sheet={}, rows={}", sheet.getSheetName(), sheetData.size());
                 }
 
-                // 统计
                 totalRows += sheetListener.getTotalRows();
                 successRows += sheetListener.getSuccessRows();
                 failedRows += sheetListener.getFailedRows();
@@ -114,7 +85,6 @@ public class ExcelImportService {
 
             excelReader.finish();
 
-            // 构建结果
             return ImportResultDTO.builder()
                     .category(category)
                     .fileName(fileName)
@@ -124,24 +94,24 @@ public class ExcelImportService {
                     .columns(new ArrayList<>(allColumns))
                     .errors(allErrors)
                     .success(true)
-                    .message(String.format("导入完成: 成功 %d 行, 失败 %d 行", successRows, failedRows))
+                    .message(String.format("Import completed: success %d rows, failed %d rows", successRows, failedRows))
                     .build();
 
         } catch (IOException e) {
-            log.error("文件读取失败: {}", fileName, e);
+            log.error("Failed to read file={}", fileName, e);
             return ImportResultDTO.builder()
                     .category(category)
                     .fileName(fileName)
                     .success(false)
-                    .message("文件读取失败: " + e.getMessage())
+                    .message("Failed to read file: " + e.getMessage())
                     .build();
         } catch (Exception e) {
-            log.error("导入失败: {}", fileName, e);
+            log.error("Failed to import file={}", fileName, e);
             return ImportResultDTO.builder()
                     .category(category)
                     .fileName(fileName)
                     .success(false)
-                    .message("导入失败: " + e.getMessage())
+                    .message("Failed to import file: " + e.getMessage())
                     .build();
         }
     }

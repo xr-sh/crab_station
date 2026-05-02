@@ -3,17 +3,19 @@ package com.example.controller;
 import com.example.dto.*;
 import com.example.entity.ApiConfig;
 import com.example.service.ApiConfigService;
+import com.example.util.PageRequestUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,9 +23,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/api-configs")
 @RequiredArgsConstructor
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"})
+@PreAuthorize("hasRole('ADMIN')")
 public class ApiConfigController {
 
     private final ApiConfigService apiConfigService;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "platformName", "status");
 
     @GetMapping
     public ResponseEntity<PageResponse<ApiConfigDTO>> getApiConfigs(
@@ -34,8 +38,7 @@ public class ApiConfigController {
             @RequestParam(required = false) String platformName,
             @RequestParam(required = false) Integer status) {
 
-        Sort sort = Sort.by(sortDirection.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        PageRequest pageRequest = PageRequestUtils.of(page, size, sortBy, sortDirection, ALLOWED_SORT_FIELDS);
 
         Page<ApiConfig> configPage = apiConfigService.getApiConfigs(platformName, status, pageRequest);
 
@@ -103,8 +106,8 @@ public class ApiConfigController {
         return ApiConfigDTO.builder()
                 .id(config.getId())
                 .platformName(config.getPlatformName())
-                .apiKey(config.getApiKey())
-                .secret(config.getSecret())
+                .apiKey(apiConfigService.maskSecret(config.getApiKey()))
+                .secret(apiConfigService.maskSecret(config.getSecret()))
                 .baseUrl(config.getBaseUrl())
                 .dynamicConfig(apiConfigService.parseDynamicConfig(config.getDynamicConfig()))
                 .status(config.getStatus())

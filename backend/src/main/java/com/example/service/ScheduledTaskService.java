@@ -32,13 +32,13 @@ public class ScheduledTaskService {
     @Transactional(readOnly = true)
     public ScheduledTask getScheduledTaskById(UUID id) {
         return scheduledTaskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("定时任务不存在"));
+                .orElseThrow(() -> new RuntimeException("Scheduled task does not exist"));
     }
 
     @Transactional
     public ScheduledTask createScheduledTask(CreateScheduledTaskRequest request) {
         if (scheduledTaskRepository.existsByTaskName(request.getTaskName())) {
-            throw new RuntimeException("该任务名称已存在");
+            throw new RuntimeException("Scheduled task name already exists");
         }
 
         ScheduledTask task = ScheduledTask.builder()
@@ -59,7 +59,7 @@ public class ScheduledTaskService {
 
         if (request.getTaskName() != null && !request.getTaskName().equals(task.getTaskName())) {
             if (scheduledTaskRepository.existsByTaskName(request.getTaskName())) {
-                throw new RuntimeException("该任务名称已存在");
+                throw new RuntimeException("Scheduled task name already exists");
             }
             task.setTaskName(request.getTaskName());
         }
@@ -85,8 +85,7 @@ public class ScheduledTaskService {
 
     @Transactional
     public void deleteScheduledTask(UUID id) {
-        ScheduledTask task = getScheduledTaskById(id);
-        scheduledTaskRepository.delete(task);
+        scheduledTaskRepository.delete(getScheduledTaskById(id));
     }
 
     @Transactional

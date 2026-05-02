@@ -3,6 +3,7 @@ package com.example.service;
 import com.example.dto.CreateUserRequest;
 import com.example.dto.UpdateUserRequest;
 import com.example.entity.User;
+import com.example.exception.BusinessException;
 import com.example.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,18 +31,21 @@ public class UserService {
 
     public User getUserById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new BusinessException("User does not exist"));
     }
 
     @Transactional
     public User createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("用户名已被使用");
+            throw new BusinessException("Username already exists");
         }
-
-        if (request.getEmail() != null && !request.getEmail().isEmpty() 
+        if (request.getEmail() != null && !request.getEmail().isEmpty()
                 && userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("邮箱已被注册");
+            throw new BusinessException("Email already exists");
+        }
+        if (request.getPhone() != null && !request.getPhone().isEmpty()
+                && userRepository.existsByPhone(request.getPhone())) {
+            throw new BusinessException("Phone already exists");
         }
 
         User user = User.builder()
@@ -51,6 +55,7 @@ public class UserService {
                 .phone(request.getPhone())
                 .avatar(request.getAvatar())
                 .status(request.getStatus() != null ? request.getStatus() : 1)
+                .role(normalizeRole(request.getRole()))
                 .build();
 
         return userRepository.save(user);
@@ -59,18 +64,20 @@ public class UserService {
     @Transactional
     public User updateUser(UUID id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new BusinessException("User does not exist"));
 
-        // 检查邮箱是否被其他用户使用
-        if (request.getEmail() != null && !request.getEmail().isEmpty() 
+        if (request.getEmail() != null && !request.getEmail().isEmpty()
                 && !request.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
-                throw new RuntimeException("邮箱已被注册");
+                throw new BusinessException("Email already exists");
             }
             user.setEmail(request.getEmail());
         }
 
-        if (request.getPhone() != null) {
+        if (request.getPhone() != null && !request.getPhone().equals(user.getPhone())) {
+            if (!request.getPhone().isEmpty() && userRepository.existsByPhone(request.getPhone())) {
+                throw new BusinessException("Phone already exists");
+            }
             user.setPhone(request.getPhone());
         }
 
@@ -79,10 +86,22 @@ public class UserService {
         }
 
         if (request.getStatus() != null) {
+            if ("ADMIN".equals(user.getRole()) && request.getStatus() != 1
+                    && userRepository.countByRoleAndStatus("ADMIN", 1) <= 1) {
+                throw new BusinessException("Cannot disable the last active admin");
+            }
             user.setStatus(request.getStatus());
         }
 
-        // 如果提供了密码，则更新密码
+        if (request.getRole() != null) {
+            String newRole = normalizeRole(request.getRole());
+            if ("ADMIN".equals(user.getRole()) && !"ADMIN".equals(newRole)
+                    && userRepository.countByRoleAndStatus("ADMIN", 1) <= 1) {
+                throw new BusinessException("Cannot demote the last active admin");
+            }
+            user.setRole(newRole);
+        }
+
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -91,18 +110,37 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(UUID id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("用户不存在");
+    public void deleteUser(UUID id, String currentUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("User does not exist"));
+        if (user.getUsername().equals(currentUsername)) {
+            throw new BusinessException("Cannot delete current user");
         }
-        userRepository.deleteById(id);
+        if ("ADMIN".equals(user.getRole()) && userRepository.countByRoleAndStatus("ADMIN", 1) <= 1) {
+            throw new BusinessException("Cannot delete the last active admin");
+        }
+        userRepository.delete(user);
     }
 
     @Transactional
     public void updateUserStatus(UUID id, Integer status) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new BusinessException("User does not exist"));
+        if ("ADMIN".equals(user.getRole()) && status != 1 && userRepository.countByRoleAndStatus("ADMIN", 1) <= 1) {
+            throw new BusinessException("Cannot disable the last active admin");
+        }
         user.setStatus(status);
         userRepository.save(user);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "USER";
+        }
+        String normalized = role.trim().toUpperCase();
+        if (!normalized.equals("ADMIN") && !normalized.equals("USER")) {
+            throw new BusinessException("Unsupported role: " + role);
+        }
+        return normalized;
     }
 }
