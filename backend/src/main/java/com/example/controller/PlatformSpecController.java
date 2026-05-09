@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class PlatformSpecController {
 
     private final PlatformSpecService platformSpecService;
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "name", "status");
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "name", "category", "status");
 
     @GetMapping
     public ResponseEntity<PageResponse<PlatformSpecDTO>> getPlatformSpecs(
@@ -98,6 +98,7 @@ public class PlatformSpecController {
         return PlatformSpecDTO.builder()
                 .id(spec.getId())
                 .name(spec.getName())
+                .category(spec.getCategory())
                 .status(spec.getStatus())
                 .remark(spec.getRemark())
                 .createdAt(spec.getCreatedAt())

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Modal, Form, Input, Switch, message } from 'antd'
+import { Modal, Form, Input, InputNumber, Select, Switch, message } from 'antd'
 import { purchaseSpecApi, PurchaseSpec, CreatePurchaseSpecRequest, UpdatePurchaseSpecRequest } from '../../../api/purchaseSpec'
 
 interface PurchaseSpecModalProps {
@@ -23,6 +23,9 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
       if (spec) {
         form.setFieldsValue({
           name: spec.name,
+          category: spec.category,
+          price: spec.price,
+          priceChangeReason: undefined,
           status: spec.status === 1,
           remark: spec.remark,
         })
@@ -36,7 +39,6 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
-
       const submitData = {
         ...values,
         status: values.status ? 1 : 0,
@@ -76,14 +78,40 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
         style={{ marginTop: 16 }}
       >
         <Form.Item
-          label="规格名称"
+          label="规格范围(两)"
           name="name"
           rules={[
-            { required: true, message: '请输入规格名称' },
-            { max: 100, message: '规格名称最多100个字符' },
+            { required: true, message: '请输入规格范围' },
+            { max: 100, message: '规格范围最多100个字符' },
           ]}
         >
-          <Input placeholder="如：3-5斤/只" />
+          <Input placeholder="如：3-5" />
+        </Form.Item>
+
+        <Form.Item
+          label="类别"
+          name="category"
+          rules={[{ required: true, message: '请选择类别' }]}
+        >
+          <Select
+            placeholder="请选择类别"
+            options={[
+              { value: '公', label: '公' },
+              { value: '母', label: '母' },
+            ]}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="价格(元/斤)"
+          name="price"
+        >
+          <InputNumber
+            min={0}
+            precision={2}
+            style={{ width: '100%' }}
+            placeholder="请输入价格"
+          />
         </Form.Item>
 
         <Form.Item

@@ -31,9 +31,9 @@ Frontend:
 - Users: admin-only user management.
 - Finance: income and expense records.
 - Purchase: purchase records with purchase items.
-- PurchaseSpec: internal purchase specification management.
-- PlatformSpec: external platform specification management.
-- SpecificationMapping: mapping between purchase specs and platform specs.
+- PurchaseSpec: internal purchase specification management, including specification range, category (`公`/`母`), current price, and price history.
+- PlatformSpec: external platform specification management, including specification range and category (`公`/`母`).
+- SpecificationMapping: category-aware mapping between purchase specs and platform specs; mapped specs must share the same category.
 - Express: Excel import and dynamic express data analysis.
 - ApiConfig: admin-only external platform API configuration.
 - ScheduledTask: admin-only scheduled task configuration.

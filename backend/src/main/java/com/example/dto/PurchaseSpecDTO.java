@@ -3,6 +3,7 @@ package com.example.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,6 +12,8 @@ import java.util.UUID;
 public class PurchaseSpecDTO {
     private UUID id;
     private String name;
+    private String category;
+    private BigDecimal price;
     private Integer status;
     private String remark;
     private LocalDateTime createdAt;

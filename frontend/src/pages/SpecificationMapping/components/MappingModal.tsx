@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Modal, Form, Select, Switch, message, Input } from 'antd'
 import { specificationMappingApi, SpecificationMapping, CreateSpecificationMappingRequest, UpdateSpecificationMappingRequest } from '../../../api/specificationMapping'
 import { purchaseSpecApi, PurchaseSpec } from '../../../api/purchaseSpec'
@@ -11,6 +11,11 @@ interface MappingModalProps {
   mapping: SpecificationMapping | null
 }
 
+const categoryOptions = [
+  { value: '公', label: '公' },
+  { value: '母', label: '母' },
+]
+
 const MappingModal: React.FC<MappingModalProps> = ({
   visible,
   onCancel,
@@ -22,8 +27,18 @@ const MappingModal: React.FC<MappingModalProps> = ({
   const [purchaseSpecs, setPurchaseSpecs] = useState<PurchaseSpec[]>([])
   const [platformSpecs, setPlatformSpecs] = useState<PlatformSpec[]>([])
   const [loading, setLoading] = useState(false)
+  const category = Form.useWatch('category', form)
 
-  // 获取所有启用的规格
+  const filteredPurchaseSpecs = useMemo(
+    () => purchaseSpecs.filter(spec => spec.category === category),
+    [purchaseSpecs, category],
+  )
+
+  const filteredPlatformSpecs = useMemo(
+    () => platformSpecs.filter(spec => spec.category === category),
+    [platformSpecs, category],
+  )
+
   const fetchSpecs = async () => {
     setLoading(true)
     try {
@@ -45,6 +60,7 @@ const MappingModal: React.FC<MappingModalProps> = ({
       fetchSpecs()
       if (mapping) {
         form.setFieldsValue({
+          category: mapping.category,
           purchaseSpecId: mapping.purchaseSpecId,
           platformSpecId: mapping.platformSpecId,
           status: mapping.status === 1,
@@ -57,10 +73,16 @@ const MappingModal: React.FC<MappingModalProps> = ({
     }
   }, [visible, mapping, form])
 
+  const handleCategoryChange = () => {
+    form.setFieldsValue({
+      purchaseSpecId: undefined,
+      platformSpecId: undefined,
+    })
+  }
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
-
       const submitData = {
         ...values,
         status: values.status ? 1 : 0,
@@ -101,18 +123,14 @@ const MappingModal: React.FC<MappingModalProps> = ({
         style={{ marginTop: 16 }}
       >
         <Form.Item
-          label="进货规格"
-          name="purchaseSpecId"
-          rules={[{ required: true, message: '请选择进货规格' }]}
+          label="类别"
+          name="category"
+          rules={[{ required: true, message: '请选择类别' }]}
         >
           <Select
-            placeholder="请选择进货规格"
-            showSearch
-            optionFilterProp="label"
-            options={purchaseSpecs.map(s => ({
-              value: s.id,
-              label: s.name,
-            }))}
+            placeholder="请选择类别"
+            options={categoryOptions}
+            onChange={handleCategoryChange}
           />
         </Form.Item>
 
@@ -122,12 +140,30 @@ const MappingModal: React.FC<MappingModalProps> = ({
           rules={[{ required: true, message: '请选择平台规格' }]}
         >
           <Select
-            placeholder="请选择平台规格"
+            placeholder={category ? '请选择平台规格' : '请先选择类别'}
             showSearch
+            disabled={!category}
             optionFilterProp="label"
-            options={platformSpecs.map(s => ({
-              value: s.id,
-              label: s.name,
+            options={filteredPlatformSpecs.map(spec => ({
+              value: spec.id,
+              label: spec.name,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="进货规格"
+          name="purchaseSpecId"
+          rules={[{ required: true, message: '请选择进货规格' }]}
+        >
+          <Select
+            placeholder={category ? '请选择进货规格' : '请先选择类别'}
+            showSearch
+            disabled={!category}
+            optionFilterProp="label"
+            options={filteredPurchaseSpecs.map(spec => ({
+              value: spec.id,
+              label: spec.name,
             }))}
           />
         </Form.Item>

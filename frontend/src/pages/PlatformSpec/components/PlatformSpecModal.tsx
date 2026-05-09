@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Modal, Form, Input, Switch, message } from 'antd'
+import { Modal, Form, Input, Select, Switch, message } from 'antd'
 import { platformSpecApi, PlatformSpec, CreatePlatformSpecRequest, UpdatePlatformSpecRequest } from '../../../api/platformSpec'
 
 interface PlatformSpecModalProps {
@@ -23,6 +23,7 @@ const PlatformSpecModal: React.FC<PlatformSpecModalProps> = ({
       if (spec) {
         form.setFieldsValue({
           name: spec.name,
+          category: spec.category,
           status: spec.status === 1,
           remark: spec.remark,
         })
@@ -36,7 +37,6 @@ const PlatformSpecModal: React.FC<PlatformSpecModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
-
       const submitData = {
         ...values,
         status: values.status ? 1 : 0,
@@ -76,14 +76,28 @@ const PlatformSpecModal: React.FC<PlatformSpecModalProps> = ({
         style={{ marginTop: 16 }}
       >
         <Form.Item
-          label="规格名称"
+          label="规格范围(两)"
           name="name"
           rules={[
-            { required: true, message: '请输入规格名称' },
-            { max: 100, message: '规格名称最多100个字符' },
+            { required: true, message: '请输入规格范围' },
+            { max: 100, message: '规格范围最多100个字符' },
           ]}
         >
-          <Input placeholder="如：标准装" />
+          <Input placeholder="如：3-5" />
+        </Form.Item>
+
+        <Form.Item
+          label="类别"
+          name="category"
+          rules={[{ required: true, message: '请选择类别' }]}
+        >
+          <Select
+            placeholder="请选择类别"
+            options={[
+              { value: '公', label: '公' },
+              { value: '母', label: '母' },
+            ]}
+          />
         </Form.Item>
 
         <Form.Item

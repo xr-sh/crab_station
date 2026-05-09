@@ -62,6 +62,13 @@ export interface Statistics {
   averageFee: number
 }
 
+export interface AddressDistribution {
+  provinceStats: Record<string, number>
+  cityStats: Record<string, number>
+  matchedCount: number
+  unmatchedCount: number
+}
+
 /**
  * 快递分析API
  */
@@ -164,5 +171,9 @@ export const expressApi = {
    */
   getStatistics: () => {
     return request.get<Statistics>('/express/statistics')
+  },
+
+  getAddressDistribution: () => {
+    return request.get<AddressDistribution>('/express/address-distribution')
   },
 }

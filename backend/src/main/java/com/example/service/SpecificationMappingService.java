@@ -32,20 +32,25 @@ public class SpecificationMappingService {
 
     @Transactional(readOnly = true)
     public SpecificationMapping getSpecificationMappingById(UUID id) {
-        return specificationMappingRepository.findById(id)
+        return specificationMappingRepository.findAll().stream()
+                .filter(mapping -> id.equals(mapping.getId()))
+                .findFirst()
                 .orElseThrow(() -> new BusinessException("Specification mapping does not exist"));
     }
 
     @Transactional
     public SpecificationMapping createSpecificationMapping(CreateSpecificationMappingRequest request) {
-        if (specificationMappingRepository.existsByPurchaseSpec_IdAndPlatformSpec_Id(
-                request.getPurchaseSpecId(), request.getPlatformSpecId())) {
+        PurchaseSpec purchaseSpec = getPurchaseSpec(request.getPurchaseSpecId());
+        PlatformSpec platformSpec = getPlatformSpec(request.getPlatformSpecId());
+        validateCategoryMatch(request.getCategory(), purchaseSpec, platformSpec);
+
+        if (mappingExists(purchaseSpec.getId(), platformSpec.getId(), null)) {
             throw new BusinessException("Specification mapping already exists");
         }
 
         SpecificationMapping mapping = SpecificationMapping.builder()
-                .purchaseSpec(getPurchaseSpec(request.getPurchaseSpecId()))
-                .platformSpec(getPlatformSpec(request.getPlatformSpecId()))
+                .purchaseSpec(purchaseSpec)
+                .platformSpec(platformSpec)
                 .status(request.getStatus() != null ? request.getStatus() : 1)
                 .remark(request.getRemark())
                 .build();
@@ -55,6 +60,7 @@ public class SpecificationMappingService {
     @Transactional
     public SpecificationMapping updateSpecificationMapping(UUID id, UpdateSpecificationMappingRequest request) {
         SpecificationMapping mapping = getSpecificationMappingById(id);
+        String category = request.getCategory() != null ? normalizeCategory(request.getCategory()) : mapping.getPurchaseSpec().getCategory();
 
         if (request.getPurchaseSpecId() != null) {
             mapping.setPurchaseSpec(getPurchaseSpec(request.getPurchaseSpecId()));
@@ -68,13 +74,11 @@ public class SpecificationMappingService {
         if (request.getRemark() != null) {
             mapping.setRemark(request.getRemark());
         }
+        validateCategoryMatch(category, mapping.getPurchaseSpec(), mapping.getPlatformSpec());
 
-        specificationMappingRepository.findByPurchaseSpec_IdAndPlatformSpec_Id(
-                        mapping.getPurchaseSpec().getId(), mapping.getPlatformSpec().getId())
-                .filter(existing -> !existing.getId().equals(mapping.getId()))
-                .ifPresent(existing -> {
-                    throw new BusinessException("Specification mapping already exists");
-                });
+        if (mappingExists(mapping.getPurchaseSpec().getId(), mapping.getPlatformSpec().getId(), mapping.getId())) {
+            throw new BusinessException("Specification mapping already exists");
+        }
 
         return specificationMappingRepository.save(mapping);
     }
@@ -85,12 +89,41 @@ public class SpecificationMappingService {
     }
 
     private PurchaseSpec getPurchaseSpec(UUID id) {
-        return purchaseSpecRepository.findById(id)
+        return purchaseSpecRepository.findAll().stream()
+                .filter(spec -> id.equals(spec.getId()))
+                .findFirst()
                 .orElseThrow(() -> new BusinessException("Purchase spec does not exist"));
     }
 
     private PlatformSpec getPlatformSpec(UUID id) {
-        return platformSpecRepository.findById(id)
+        return platformSpecRepository.findAll().stream()
+                .filter(spec -> id.equals(spec.getId()))
+                .findFirst()
                 .orElseThrow(() -> new BusinessException("Platform spec does not exist"));
+    }
+
+    private boolean mappingExists(UUID purchaseSpecId, UUID platformSpecId, UUID excludedMappingId) {
+        return specificationMappingRepository.findAll().stream()
+                .filter(mapping -> excludedMappingId == null || !excludedMappingId.equals(mapping.getId()))
+                .anyMatch(mapping -> purchaseSpecId.equals(mapping.getPurchaseSpec().getId())
+                        && platformSpecId.equals(mapping.getPlatformSpec().getId()));
+    }
+
+    private void validateCategoryMatch(String requestedCategory, PurchaseSpec purchaseSpec, PlatformSpec platformSpec) {
+        String category = normalizeCategory(requestedCategory);
+        if (!category.equals(purchaseSpec.getCategory()) || !category.equals(platformSpec.getCategory())) {
+            throw new BusinessException("Specification mapping category must match purchase spec and platform spec category");
+        }
+    }
+
+    private String normalizeCategory(String category) {
+        if (category == null || category.isBlank()) {
+            throw new BusinessException("Category must be 公 or 母");
+        }
+        String value = category.trim();
+        if (!"公".equals(value) && !"母".equals(value)) {
+            throw new BusinessException("Category must be 公 or 母");
+        }
+        return value;
     }
 }

@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  Table,
   Button,
-  Input,
-  Space,
-  Popconfirm,
-  message,
   Card,
-  Typography,
-  Select,
-  Tag,
   Grid,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
 } from 'antd'
 import {
+  DeleteOutlined,
+  EditOutlined,
   PlusOutlined,
   SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons'
 import { specificationMappingApi, SpecificationMapping } from '../../api/specificationMapping'
 import MappingModal from './components/MappingModal'
@@ -115,6 +115,12 @@ const SpecificationMappingPage: React.FC = () => {
 
   const columns = [
     {
+      title: '类别',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category: string) => category || '-',
+    },
+    {
       title: '进货规格',
       dataIndex: 'purchaseSpecName',
       key: 'purchaseSpecName',
@@ -151,7 +157,7 @@ const SpecificationMappingPage: React.FC = () => {
       key: 'action',
       width: 200,
       render: (_: any, record: SpecificationMapping) => (
-        <Space size="middle">
+        <Space size="small" wrap>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -162,7 +168,7 @@ const SpecificationMappingPage: React.FC = () => {
           </Button>
           <Popconfirm
             title="确认删除"
-            description="确定要删除这条规格吗？"
+            description="确定要删除这条规格映射吗？"
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"

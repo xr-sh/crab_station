@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,8 +22,14 @@ public class PurchaseSpec {
     @Column(name = "id", updatable = false, nullable = false, length = 36)
     private UUID id = UUID.randomUUID();
 
-    @Column(name = "name", nullable = false, length = 100, unique = true)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
+
+    @Column(length = 10)
+    private String category;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
 
     @Column(nullable = false)
     private Integer status = 1;

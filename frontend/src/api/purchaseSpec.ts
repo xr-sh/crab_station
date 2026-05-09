@@ -3,10 +3,24 @@ import request from './request'
 export interface PurchaseSpec {
   id: string
   name: string
+  category: string | null
+  price: number | null
   status: number
   remark: string
   createdAt: string
   updatedAt: string
+}
+
+export interface PurchaseSpecPriceHistory {
+  id: string
+  purchaseSpecId: string
+  purchaseSpecName: string
+  oldPrice: number | null
+  newPrice: number
+  changeReason?: string
+  changedBy?: string
+  changedAt: string
+  createdAt: string
 }
 
 export interface PageResponse<T> {
@@ -21,12 +35,18 @@ export interface PageResponse<T> {
 
 export interface CreatePurchaseSpecRequest {
   name: string
+  category?: string
+  price?: number
+  priceChangeReason?: string
   status?: number
   remark?: string
 }
 
 export interface UpdatePurchaseSpecRequest {
   name?: string
+  category?: string
+  price?: number
+  priceChangeReason?: string
   status?: number
   remark?: string
 }
@@ -52,6 +72,10 @@ export const purchaseSpecApi = {
   // 获取单个进货规格
   getPurchaseSpecById: (id: string) => {
     return request.get<PurchaseSpec>(`/purchase-specs/${id}`)
+  },
+
+  getPriceHistory: (id: string) => {
+    return request.get<PurchaseSpecPriceHistory[]>(`/purchase-specs/${id}/price-history`)
   },
 
   // 创建进货规格

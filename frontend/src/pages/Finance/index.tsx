@@ -19,7 +19,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  DollarOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from '@ant-design/icons'
@@ -258,7 +257,7 @@ const Finance: React.FC = () => {
               value={statistics.balance}
               precision={2}
               valueStyle={{ color: statistics.balance >= 0 ? '#52c41a' : '#ff4d4f' }}
-              prefix={<DollarOutlined />}
+              prefix="¥"
               suffix="元"
             />
           </Card>

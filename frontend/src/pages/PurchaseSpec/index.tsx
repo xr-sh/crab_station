@@ -1,28 +1,34 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  Table,
   Button,
-  Input,
-  Space,
-  Popconfirm,
-  message,
   Card,
-  Typography,
-  Select,
-  Tag,
+  Drawer,
   Grid,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
 } from 'antd'
 import {
+  DeleteOutlined,
+  EditOutlined,
+  HistoryOutlined,
   PlusOutlined,
   SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons'
-import { purchaseSpecApi, PurchaseSpec } from '../../api/purchaseSpec'
+import { purchaseSpecApi, PurchaseSpec, PurchaseSpecPriceHistory } from '../../api/purchaseSpec'
 import PurchaseSpecModal from './components/PurchaseSpecModal'
 
 const { Title } = Typography
 const { useBreakpoint } = Grid
+
+const formatPrice = (price: number | null | undefined) => {
+  return price != null ? `${Number(price).toFixed(2)}` : '-'
+}
 
 const PurchaseSpecPage: React.FC = () => {
   const [specs, setSpecs] = useState<PurchaseSpec[]>([])
@@ -38,6 +44,10 @@ const PurchaseSpecPage: React.FC = () => {
   })
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSpec, setEditingSpec] = useState<PurchaseSpec | null>(null)
+  const [historyVisible, setHistoryVisible] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historySpec, setHistorySpec] = useState<PurchaseSpec | null>(null)
+  const [priceHistory, setPriceHistory] = useState<PurchaseSpecPriceHistory[]>([])
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -105,6 +115,20 @@ const PurchaseSpecPage: React.FC = () => {
     setModalVisible(true)
   }
 
+  const handleViewPriceHistory = async (record: PurchaseSpec) => {
+    setHistorySpec(record)
+    setHistoryVisible(true)
+    setHistoryLoading(true)
+    try {
+      const res = await purchaseSpecApi.getPriceHistory(record.id) as any
+      setPriceHistory(res)
+    } catch (error: any) {
+      message.error(error.message || '获取价格历史失败')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
   const handleModalSuccess = () => {
     setModalVisible(false)
     fetchSpecs(pagination.current - 1, pagination.pageSize)
@@ -112,9 +136,21 @@ const PurchaseSpecPage: React.FC = () => {
 
   const columns = [
     {
-      title: '规格名称',
+      title: '规格范围(两)',
       dataIndex: 'name',
       key: 'name',
+    },
+    {
+      title: '价格(元/斤)',
+      dataIndex: 'price',
+      key: 'price',
+      render: formatPrice,
+    },
+    {
+      title: '类别',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category: string | null) => category || '-',
     },
     {
       title: '状态',
@@ -141,9 +177,9 @@ const PurchaseSpecPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 280,
       render: (_: any, record: PurchaseSpec) => (
-        <Space size="middle">
+        <Space size="small" wrap>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -151,6 +187,13 @@ const PurchaseSpecPage: React.FC = () => {
             onClick={() => handleEdit(record)}
           >
             编辑
+          </Button>
+          <Button
+            icon={<HistoryOutlined />}
+            size="small"
+            onClick={() => handleViewPriceHistory(record)}
+          >
+            价格历史
           </Button>
           <Popconfirm
             title="确认删除"
@@ -173,6 +216,27 @@ const PurchaseSpecPage: React.FC = () => {
     },
   ]
 
+  const historyColumns = [
+    {
+      title: '原价格',
+      dataIndex: 'oldPrice',
+      key: 'oldPrice',
+      render: formatPrice,
+    },
+    {
+      title: '新价格',
+      dataIndex: 'newPrice',
+      key: 'newPrice',
+      render: formatPrice,
+    },
+    {
+      title: '变动时间',
+      dataIndex: 'changedAt',
+      key: 'changedAt',
+      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
+    },
+  ]
+
   return (
     <div style={{ padding: isMobile ? 16 : 24 }}>
       <Card>
@@ -188,7 +252,7 @@ const PurchaseSpecPage: React.FC = () => {
         <div style={{ marginBottom: 16 }}>
           <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
-              placeholder="规格名称"
+              placeholder="规格范围"
               value={filters.name}
               onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
               onPressEnter={handleSearch}
@@ -233,6 +297,23 @@ const PurchaseSpecPage: React.FC = () => {
         onSuccess={handleModalSuccess}
         spec={editingSpec}
       />
+
+      <Drawer
+        title={historySpec ? `价格历史 - ${historySpec.name}` : '价格历史'}
+        open={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        width={isMobile ? '100%' : 720}
+      >
+        <Table
+          columns={historyColumns}
+          dataSource={priceHistory}
+          rowKey="id"
+          loading={historyLoading}
+          pagination={false}
+          size="small"
+          scroll={{ x: 'max-content' }}
+        />
+      </Drawer>
     </div>
   )
 }

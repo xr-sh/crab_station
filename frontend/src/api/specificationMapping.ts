@@ -2,6 +2,7 @@ import request from './request'
 
 export interface SpecificationMapping {
   id: string
+  category: string
   purchaseSpecId: string
   purchaseSpecName: string
   platformSpecId: string
@@ -23,6 +24,7 @@ export interface PageResponse<T> {
 }
 
 export interface CreateSpecificationMappingRequest {
+  category: string
   purchaseSpecId: string
   platformSpecId: string
   status?: number
@@ -30,6 +32,7 @@ export interface CreateSpecificationMappingRequest {
 }
 
 export interface UpdateSpecificationMappingRequest {
+  category?: string
   purchaseSpecId?: string
   platformSpecId?: string
   status?: number

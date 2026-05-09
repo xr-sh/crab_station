@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
-  Table,
   Button,
-  Input,
-  Space,
-  Popconfirm,
-  message,
   Card,
-  Typography,
-  Select,
-  Tag,
   Grid,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
 } from 'antd'
 import {
+  DeleteOutlined,
+  EditOutlined,
   PlusOutlined,
   SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons'
 import { platformSpecApi, PlatformSpec } from '../../api/platformSpec'
 import PlatformSpecModal from './components/PlatformSpecModal'
@@ -112,9 +112,15 @@ const PlatformSpecPage: React.FC = () => {
 
   const columns = [
     {
-      title: '规格名称',
+      title: '规格范围(两)',
       dataIndex: 'name',
       key: 'name',
+    },
+    {
+      title: '类别',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category: string | null) => category || '-',
     },
     {
       title: '状态',
@@ -143,7 +149,7 @@ const PlatformSpecPage: React.FC = () => {
       key: 'action',
       width: 200,
       render: (_: any, record: PlatformSpec) => (
-        <Space size="middle">
+        <Space size="small" wrap>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -188,7 +194,7 @@ const PlatformSpecPage: React.FC = () => {
         <div style={{ marginBottom: 16 }}>
           <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
-              placeholder="规格名称"
+              placeholder="规格范围"
               value={filters.name}
               onChange={(e) => setFilters(prev => ({ ...prev, name: e.target.value }))}
               onPressEnter={handleSearch}

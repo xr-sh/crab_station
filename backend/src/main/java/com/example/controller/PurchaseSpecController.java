@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class PurchaseSpecController {
 
     private final PurchaseSpecService purchaseSpecService;
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "name", "status");
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("createdAt", "updatedAt", "name", "category", "price", "status");
 
     @GetMapping
     public ResponseEntity<PageResponse<PurchaseSpecDTO>> getPurchaseSpecs(
@@ -64,6 +64,11 @@ public class PurchaseSpecController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/{id}/price-history")
+    public ResponseEntity<List<PurchaseSpecPriceHistoryDTO>> getPriceHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(purchaseSpecService.getPriceHistory(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PurchaseSpecDTO> getPurchaseSpecById(@PathVariable UUID id) {
         PurchaseSpec spec = purchaseSpecService.getPurchaseSpecById(id);
@@ -98,6 +103,8 @@ public class PurchaseSpecController {
         return PurchaseSpecDTO.builder()
                 .id(spec.getId())
                 .name(spec.getName())
+                .category(spec.getCategory())
+                .price(spec.getPrice())
                 .status(spec.getStatus())
                 .remark(spec.getRemark())
                 .createdAt(spec.getCreatedAt())

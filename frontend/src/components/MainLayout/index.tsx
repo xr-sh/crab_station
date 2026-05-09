@@ -18,7 +18,6 @@ import {
   HomeOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  DollarOutlined,
   ShoppingCartOutlined,
   AppstoreOutlined,
   ProfileOutlined,
@@ -99,7 +98,7 @@ const MainLayout: React.FC = () => {
     },
     {
       key: '/finance',
-      icon: <DollarOutlined />,
+      icon: <span style={{ fontWeight: 600 }}>¥</span>,
       label: '财务管理',
     },
     {

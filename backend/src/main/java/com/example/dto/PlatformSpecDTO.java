@@ -11,6 +11,7 @@ import java.util.UUID;
 public class PlatformSpecDTO {
     private UUID id;
     private String name;
+    private String category;
     private Integer status;
     private String remark;
     private LocalDateTime createdAt;

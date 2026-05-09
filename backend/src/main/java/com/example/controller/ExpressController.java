@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.dto.ExpressAnalysisDTO;
 import com.example.dto.ImportResultDTO;
 import com.example.dto.PageResponse;
+import com.example.service.ExpressAddressDistributionService;
 import com.example.service.ExcelImportService;
 import com.example.service.ExpressAnalysisService;
 import com.example.util.PageRequestUtils;
@@ -36,6 +37,7 @@ public class ExpressController {
 
     private final ExcelImportService excelImportService;
     private final ExpressAnalysisService expressAnalysisService;
+    private final ExpressAddressDistributionService expressAddressDistributionService;
 
     @PostMapping("/import")
     public ResponseEntity<List<ImportResultDTO>> importExcel(
@@ -88,11 +90,6 @@ public class ExpressController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ExpressAnalysisDTO> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(expressAnalysisService.getById(id));
-    }
-
     @GetMapping("/columns")
     public ResponseEntity<List<String>> getColumns() {
         return ResponseEntity.ok(expressAnalysisService.getAllColumnNames());
@@ -106,26 +103,6 @@ public class ExpressController {
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(expressAnalysisService.getAllCategories());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> delete(@PathVariable UUID id) {
-        expressAnalysisService.delete(id);
-        return ResponseEntity.ok(Map.of("message", "Deleted successfully"));
-    }
-
-    @DeleteMapping("/clear")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> clearAll() {
-        expressAnalysisService.clearAll();
-        return ResponseEntity.ok(Map.of("message", "All express data cleared"));
-    }
-
-    @DeleteMapping("/file/{fileName}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> deleteByFileName(@PathVariable String fileName) {
-        expressAnalysisService.deleteByFileName(fileName);
-        return ResponseEntity.ok(Map.of("message", "File records deleted"));
     }
 
     @GetMapping("/statistics")
@@ -143,5 +120,35 @@ public class ExpressController {
         Double averageFee = expressAnalysisService.getAverageFee();
         stats.put("averageFee", averageFee != null ? Math.round(averageFee * 100) / 100.0 : 0.0);
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/address-distribution")
+    public ResponseEntity<Map<String, Object>> getAddressDistribution() {
+        return ResponseEntity.ok(expressAddressDistributionService.getReceiverAddressDistribution());
+    }
+
+    @GetMapping("/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}")
+    public ResponseEntity<ExpressAnalysisDTO> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(expressAnalysisService.getById(id));
+    }
+
+    @DeleteMapping("/clear")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> clearAll() {
+        expressAnalysisService.clearAll();
+        return ResponseEntity.ok(Map.of("message", "All express data cleared"));
+    }
+
+    @DeleteMapping("/file/{fileName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteByFileName(@PathVariable String fileName) {
+        expressAnalysisService.deleteByFileName(fileName);
+        return ResponseEntity.ok(Map.of("message", "File records deleted"));
+    }
+
+    @DeleteMapping("/{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}")
+    public ResponseEntity<Map<String, String>> delete(@PathVariable UUID id) {
+        expressAnalysisService.delete(id);
+        return ResponseEntity.ok(Map.of("message", "Deleted successfully"));
     }
 }

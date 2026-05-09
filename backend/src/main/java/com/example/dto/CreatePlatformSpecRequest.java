@@ -9,6 +9,8 @@ public class CreatePlatformSpecRequest {
     @NotBlank(message = "规格名称不能为空")
     private String name;
 
+    private String category;
+
     private Integer status;
 
     private String remark;

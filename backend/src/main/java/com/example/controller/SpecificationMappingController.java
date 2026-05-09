@@ -88,6 +88,7 @@ public class SpecificationMappingController {
     private SpecificationMappingDTO convertToDTO(SpecificationMapping mapping) {
         return SpecificationMappingDTO.builder()
                 .id(mapping.getId())
+                .category(mapping.getPurchaseSpec().getCategory())
                 .purchaseSpecId(mapping.getPurchaseSpec().getId())
                 .purchaseSpecName(mapping.getPurchaseSpec().getName())
                 .platformSpecId(mapping.getPlatformSpec().getId())

@@ -3,6 +3,7 @@ import request from './request'
 export interface PlatformSpec {
   id: string
   name: string
+  category: string | null
   status: number
   remark: string
   createdAt: string
@@ -21,12 +22,14 @@ export interface PageResponse<T> {
 
 export interface CreatePlatformSpecRequest {
   name: string
+  category?: string
   status?: number
   remark?: string
 }
 
 export interface UpdatePlatformSpecRequest {
   name?: string
+  category?: string
   status?: number
   remark?: string
 }

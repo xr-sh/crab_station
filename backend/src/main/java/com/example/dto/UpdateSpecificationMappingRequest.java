@@ -7,6 +7,8 @@ import java.util.UUID;
 @Data
 public class UpdateSpecificationMappingRequest {
 
+    private String category;
+
     private UUID purchaseSpecId;
 
     private UUID platformSpecId;
