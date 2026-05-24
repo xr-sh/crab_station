@@ -29,6 +29,7 @@ import FinanceModal from './components/FinanceModal'
 const { Title } = Typography
 const { RangePicker } = DatePicker
 const { useBreakpoint } = Grid
+const INITIAL_BALANCE = 10000
 
 const Finance: React.FC = () => {
   const [records, setRecords] = useState<FinanceRecord[]>([])
@@ -48,7 +49,7 @@ const Finance: React.FC = () => {
   const [statistics, setStatistics] = useState({
     income: 0,
     expense: 0,
-    balance: 0,
+    balance: INITIAL_BALANCE,
   })
   const screens = useBreakpoint()
   const isMobile = !screens.md
@@ -91,7 +92,7 @@ const Finance: React.FC = () => {
     setStatistics({
       income,
       expense,
-      balance: income - expense,
+      balance: INITIAL_BALANCE + income - expense,
     })
   }
 

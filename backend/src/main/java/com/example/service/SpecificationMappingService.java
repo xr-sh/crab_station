@@ -10,15 +10,18 @@ import com.example.repository.PlatformSpecRepository;
 import com.example.repository.PurchaseSpecRepository;
 import com.example.repository.SpecificationMappingRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SpecificationMappingService {
 
     private final SpecificationMappingRepository specificationMappingRepository;
@@ -32,20 +35,23 @@ public class SpecificationMappingService {
 
     @Transactional(readOnly = true)
     public SpecificationMapping getSpecificationMappingById(UUID id) {
-        return specificationMappingRepository.findAll().stream()
-                .filter(mapping -> id.equals(mapping.getId()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException("Specification mapping does not exist"));
+        return specificationMappingRepository.findById(id)
+                .or(() -> specificationMappingRepository.findAll().stream()
+                        .filter(mapping -> id.equals(mapping.getId()))
+                        .findFirst())
+                .orElseThrow(() -> new BusinessException("规格映射不存在"));
     }
 
     @Transactional
     public SpecificationMapping createSpecificationMapping(CreateSpecificationMappingRequest request) {
+        log.info("Creating specification mapping, category={}, purchaseSpecId={}, platformSpecId={}",
+                request.getCategory(), request.getPurchaseSpecId(), request.getPlatformSpecId());
         PurchaseSpec purchaseSpec = getPurchaseSpec(request.getPurchaseSpecId());
         PlatformSpec platformSpec = getPlatformSpec(request.getPlatformSpecId());
         validateCategoryMatch(request.getCategory(), purchaseSpec, platformSpec);
 
         if (mappingExists(purchaseSpec.getId(), platformSpec.getId(), null)) {
-            throw new BusinessException("Specification mapping already exists");
+            throw new BusinessException("规格映射已存在");
         }
 
         SpecificationMapping mapping = SpecificationMapping.builder()
@@ -60,7 +66,9 @@ public class SpecificationMappingService {
     @Transactional
     public SpecificationMapping updateSpecificationMapping(UUID id, UpdateSpecificationMappingRequest request) {
         SpecificationMapping mapping = getSpecificationMappingById(id);
-        String category = request.getCategory() != null ? normalizeCategory(request.getCategory()) : mapping.getPurchaseSpec().getCategory();
+        String category = request.getCategory() != null
+                ? normalizeCategory(request.getCategory())
+                : mapping.getPurchaseSpec().getCategory();
 
         if (request.getPurchaseSpecId() != null) {
             mapping.setPurchaseSpec(getPurchaseSpec(request.getPurchaseSpecId()));
@@ -77,7 +85,7 @@ public class SpecificationMappingService {
         validateCategoryMatch(category, mapping.getPurchaseSpec(), mapping.getPlatformSpec());
 
         if (mappingExists(mapping.getPurchaseSpec().getId(), mapping.getPlatformSpec().getId(), mapping.getId())) {
-            throw new BusinessException("Specification mapping already exists");
+            throw new BusinessException("规格映射已存在");
         }
 
         return specificationMappingRepository.save(mapping);
@@ -89,17 +97,29 @@ public class SpecificationMappingService {
     }
 
     private PurchaseSpec getPurchaseSpec(UUID id) {
-        return purchaseSpecRepository.findAll().stream()
-                .filter(spec -> id.equals(spec.getId()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException("Purchase spec does not exist"));
+        return purchaseSpecRepository.findById(id).orElseGet(() -> {
+            log.warn("Purchase spec not found by id={}, existingIds={}", id,
+                    purchaseSpecRepository.findAll().stream()
+                            .map(PurchaseSpec::getId)
+                            .collect(Collectors.toList()));
+            return purchaseSpecRepository.findAll().stream()
+                    .filter(spec -> id.equals(spec.getId()))
+                    .findFirst()
+                    .orElse(null);
+        });
     }
 
     private PlatformSpec getPlatformSpec(UUID id) {
-        return platformSpecRepository.findAll().stream()
-                .filter(spec -> id.equals(spec.getId()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException("Platform spec does not exist"));
+        return platformSpecRepository.findById(id).orElseGet(() -> {
+            log.warn("Platform spec not found by id={}, existingIds={}", id,
+                    platformSpecRepository.findAll().stream()
+                            .map(PlatformSpec::getId)
+                            .collect(Collectors.toList()));
+            return platformSpecRepository.findAll().stream()
+                    .filter(spec -> id.equals(spec.getId()))
+                    .findFirst()
+                    .orElse(null);
+        });
     }
 
     private boolean mappingExists(UUID purchaseSpecId, UUID platformSpecId, UUID excludedMappingId) {
@@ -110,19 +130,25 @@ public class SpecificationMappingService {
     }
 
     private void validateCategoryMatch(String requestedCategory, PurchaseSpec purchaseSpec, PlatformSpec platformSpec) {
+        if (purchaseSpec == null) {
+            throw new BusinessException("进货规格不存在");
+        }
+        if (platformSpec == null) {
+            throw new BusinessException("平台规格不存在");
+        }
         String category = normalizeCategory(requestedCategory);
         if (!category.equals(purchaseSpec.getCategory()) || !category.equals(platformSpec.getCategory())) {
-            throw new BusinessException("Specification mapping category must match purchase spec and platform spec category");
+            throw new BusinessException("规格映射类别必须和进货规格、平台规格类别一致");
         }
     }
 
     private String normalizeCategory(String category) {
         if (category == null || category.isBlank()) {
-            throw new BusinessException("Category must be 公 or 母");
+            throw new BusinessException("类别不能为空");
         }
         String value = category.trim();
         if (!"公".equals(value) && !"母".equals(value)) {
-            throw new BusinessException("Category must be 公 or 母");
+            throw new BusinessException("类别只能是公或母");
         }
         return value;
     }

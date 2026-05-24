@@ -19,6 +19,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        type:
+          preferred_uuid_jdbc_type: CHAR
 
 jwt:
   secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}

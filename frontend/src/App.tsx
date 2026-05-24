@@ -9,6 +9,7 @@ import Finance from './pages/Finance'
 import Purchase from './pages/Purchase'
 import PurchaseSpec from './pages/PurchaseSpec'
 import PlatformSpec from './pages/PlatformSpec'
+import PlatformPackage from './pages/PlatformPackage'
 import SpecificationMapping from './pages/SpecificationMapping'
 import Express from './pages/Express'
 import ApiConfig from './pages/ApiConfig'
@@ -37,6 +38,7 @@ const App: React.FC = () => {
             <Route path="express" element={<Express />} />
             <Route path="purchase-spec" element={<PurchaseSpec />} />
             <Route path="platform-spec" element={<PlatformSpec />} />
+            <Route path="platform-package" element={<PlatformPackage />} />
             <Route path="specification-mapping" element={<SpecificationMapping />} />
             <Route path="api-config" element={<ApiConfig />} />
             <Route path="scheduled-task" element={<ScheduledTask />} />

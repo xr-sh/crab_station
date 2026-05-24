@@ -1,6 +1,9 @@
 package com.example.controller;
 
-import com.example.dto.*;
+import com.example.dto.CreateSpecificationMappingRequest;
+import com.example.dto.PageResponse;
+import com.example.dto.SpecificationMappingDTO;
+import com.example.dto.UpdateSpecificationMappingRequest;
 import com.example.entity.SpecificationMapping;
 import com.example.service.SpecificationMappingService;
 import com.example.util.PageRequestUtils;
@@ -9,7 +12,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,8 +49,8 @@ public class SpecificationMappingController {
             @RequestParam(required = false) Integer status) {
 
         PageRequest pageRequest = PageRequestUtils.of(page, size, sortBy, sortDirection, ALLOWED_SORT_FIELDS);
-
-        Page<SpecificationMapping> mappingPage = specificationMappingService.getSpecificationMappings(purchaseSpecName, platformSpecName, status, pageRequest);
+        Page<SpecificationMapping> mappingPage = specificationMappingService
+                .getSpecificationMappings(purchaseSpecName, platformSpecName, status, pageRequest);
 
         PageResponse<SpecificationMappingDTO> response = PageResponse.<SpecificationMappingDTO>builder()
                 .content(mappingPage.getContent().stream()
@@ -70,7 +82,8 @@ public class SpecificationMappingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, String>> updateSpecificationMapping(@PathVariable UUID id, @Valid @RequestBody UpdateSpecificationMappingRequest request) {
+    public ResponseEntity<Map<String, String>> updateSpecificationMapping(@PathVariable UUID id,
+                                                                          @Valid @RequestBody UpdateSpecificationMappingRequest request) {
         specificationMappingService.updateSpecificationMapping(id, request);
         Map<String, String> response = new HashMap<>();
         response.put("message", "规格映射更新成功");

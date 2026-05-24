@@ -121,14 +121,14 @@ const SpecificationMappingPage: React.FC = () => {
       render: (category: string) => category || '-',
     },
     {
-      title: '进货规格',
-      dataIndex: 'purchaseSpecName',
-      key: 'purchaseSpecName',
-    },
-    {
       title: '平台规格',
       dataIndex: 'platformSpecName',
       key: 'platformSpecName',
+    },
+    {
+      title: '进货规格',
+      dataIndex: 'purchaseSpecName',
+      key: 'purchaseSpecName',
     },
     {
       title: '状态',
@@ -156,6 +156,7 @@ const SpecificationMappingPage: React.FC = () => {
       title: '操作',
       key: 'action',
       width: 200,
+      fixed: isMobile ? undefined : 'right' as const,
       render: (_: any, record: SpecificationMapping) => (
         <Space size="small" wrap>
           <Button
@@ -191,7 +192,7 @@ const SpecificationMappingPage: React.FC = () => {
     <div style={{ padding: isMobile ? 16 : 24 }}>
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 12 : 0 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 12 }}>
             <Title level={4} style={{ margin: 0 }}>规格映射</Title>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               新增映射

@@ -17,6 +17,20 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
 }) => {
   const [form] = Form.useForm()
   const isEditing = !!spec
+  const validateSpecRange = (_: unknown, value?: string) => {
+    if (!value) {
+      return Promise.resolve()
+    }
+    const trimmedValue = value.trim()
+    if (!/^\d+(\.\d+)?-\d+(\.\d+)?$/.test(trimmedValue)) {
+      return Promise.reject(new Error('规格范围格式必须为数字-数字，例如2.3-2.6'))
+    }
+    const [min, max] = trimmedValue.split('-').map(Number)
+    if (min >= max) {
+      return Promise.reject(new Error('规格范围左侧数值必须小于右侧数值'))
+    }
+    return Promise.resolve()
+  }
 
   useEffect(() => {
     if (visible) {
@@ -83,9 +97,10 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
           rules={[
             { required: true, message: '请输入规格范围' },
             { max: 100, message: '规格范围最多100个字符' },
+            { validator: validateSpecRange },
           ]}
         >
-          <Input placeholder="如：3-5" />
+          <Input placeholder="例如：2.3-2.6" />
         </Form.Item>
 
         <Form.Item

@@ -8,6 +8,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +29,7 @@ public class PurchaseSpecPriceHistory {
 
     @Id
     @Column(name = "id", updatable = false, nullable = false, length = 36)
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id = UUID.randomUUID();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,6 +46,7 @@ public class PurchaseSpecPriceHistory {
     private String changeReason;
 
     @Column(name = "changed_by", length = 36)
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID changedBy;
 
     @Column(name = "changed_at", nullable = false)

@@ -154,13 +154,13 @@ const Purchase: React.FC = () => {
         key: 'purchaseSpecName',
       },
       {
-        title: '重量(kg)',
+        title: '重量(斤)',
         dataIndex: 'weight',
         key: 'weight',
         render: (weight: number) => weight?.toFixed(2),
       },
       {
-        title: '单价(元/kg)',
+        title: '单价(元/斤)',
         dataIndex: 'unitPrice',
         key: 'unitPrice',
         render: (price: number) => price?.toFixed(2),
@@ -190,7 +190,7 @@ const Purchase: React.FC = () => {
             <Table.Summary.Row>
               <Table.Summary.Cell index={0}><strong>合计</strong></Table.Summary.Cell>
               <Table.Summary.Cell index={1}>
-                <strong>{record.totalWeight?.toFixed(2)} kg</strong>
+                <strong>{record.totalWeight?.toFixed(2)} 斤</strong>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
               <Table.Summary.Cell index={3}>
@@ -224,7 +224,7 @@ const Purchase: React.FC = () => {
       ),
     },
     {
-      title: '总重量(kg)',
+      title: '总重量(斤)',
       dataIndex: 'totalWeight',
       key: 'totalWeight',
       render: (weight: number) => (
@@ -301,7 +301,7 @@ const Purchase: React.FC = () => {
               value={statistics.totalWeight}
               precision={2}
               prefix={<ContainerOutlined />}
-              suffix="kg"
+              suffix="斤"
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>

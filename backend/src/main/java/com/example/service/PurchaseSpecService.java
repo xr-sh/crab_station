@@ -29,6 +29,7 @@ public class PurchaseSpecService {
     private final PurchaseSpecPriceHistoryRepository priceHistoryRepository;
     private final PurchaseItemRepository purchaseItemRepository;
     private final SpecificationMappingRepository specificationMappingRepository;
+    private final PlatformPackageService platformPackageService;
 
     @Transactional(readOnly = true)
     public Page<PurchaseSpec> getPurchaseSpecs(String name, Integer status, Pageable pageable) {
@@ -42,21 +43,20 @@ public class PurchaseSpecService {
 
     @Transactional(readOnly = true)
     public PurchaseSpec getPurchaseSpecById(UUID id) {
-        return purchaseSpecRepository.findAll().stream()
-                .filter(spec -> id.equals(spec.getId()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Purchase spec does not exist"));
+        return purchaseSpecRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("进货规格不存在"));
     }
 
     @Transactional
     public PurchaseSpec createPurchaseSpec(CreatePurchaseSpecRequest request) {
+        String name = normalizeSpecRange(request.getName());
         String category = normalizeCategory(request.getCategory());
-        if (existsByNameAndCategory(request.getName(), category, null)) {
-            throw new RuntimeException("Purchase spec name already exists");
+        if (existsByNameAndCategory(name, category, null)) {
+            throw new BusinessException("进货规格名称已存在");
         }
 
         PurchaseSpec spec = PurchaseSpec.builder()
-                .name(request.getName())
+                .name(name)
                 .category(category)
                 .price(request.getPrice())
                 .status(request.getStatus() != null ? request.getStatus() : 1)
@@ -72,43 +72,34 @@ public class PurchaseSpecService {
     @Transactional
     public PurchaseSpec updatePurchaseSpec(UUID id, UpdatePurchaseSpecRequest request) {
         PurchaseSpec spec = getPurchaseSpecById(id);
+        BigDecimal oldPrice = spec.getPrice();
 
-        String name = spec.getName();
-        String category = spec.getCategory();
-        BigDecimal price = spec.getPrice();
-        Integer status = spec.getStatus();
-        String remark = spec.getRemark();
-        boolean priceChanged = request.getPrice() != null && isPriceChanged(spec.getPrice(), request.getPrice());
-
-        if (request.getName() != null && !request.getName().equals(spec.getName())) {
-            name = request.getName();
-        }
-
-        if (request.getStatus() != null) {
-            status = request.getStatus();
+        if (request.getName() != null) {
+            spec.setName(normalizeSpecRange(request.getName()));
         }
         if (request.getCategory() != null) {
-            category = normalizeCategory(request.getCategory());
-        }
-        if (existsByNameAndCategory(name, category, spec.getId())) {
-            throw new RuntimeException("Purchase spec name already exists");
+            spec.setCategory(normalizeCategory(request.getCategory()));
         }
         if (request.getPrice() != null) {
-            price = request.getPrice();
+            spec.setPrice(request.getPrice());
+        }
+        if (request.getStatus() != null) {
+            spec.setStatus(request.getStatus());
         }
         if (request.getRemark() != null) {
-            remark = request.getRemark();
+            spec.setRemark(request.getRemark());
         }
 
-        int updated = purchaseSpecRepository.updateByNameAndCategory(spec.getName(), spec.getCategory(), name, category, price, status, remark);
-        if (updated == 0) {
-            throw new RuntimeException("Purchase spec does not exist");
+        if (existsByNameAndCategory(spec.getName(), spec.getCategory(), spec.getId())) {
+            throw new BusinessException("进货规格名称已存在");
         }
-        PurchaseSpec updatedSpec = getPurchaseSpecById(id);
-        if (priceChanged) {
-            savePriceHistory(updatedSpec, spec.getPrice(), request.getPrice(), request.getPriceChangeReason());
+
+        PurchaseSpec saved = purchaseSpecRepository.save(spec);
+        if (request.getPrice() != null && isPriceChanged(oldPrice, request.getPrice())) {
+            savePriceHistory(saved, oldPrice, request.getPrice(), request.getPriceChangeReason());
+            platformPackageService.refreshCostsByPurchaseSpec(saved.getId());
         }
-        return updatedSpec;
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -123,16 +114,11 @@ public class PurchaseSpecService {
     @Transactional
     public void deletePurchaseSpec(UUID id) {
         PurchaseSpec spec = getPurchaseSpecById(id);
-        if (purchaseItemRepository.findAll().stream()
-                .anyMatch(item -> id.equals(item.getPurchaseSpec().getId()))
-                || specificationMappingRepository.findAll().stream()
-                .anyMatch(mapping -> id.equals(mapping.getPurchaseSpec().getId()))) {
-            throw new BusinessException("Purchase spec is in use and cannot be deleted");
+        if (purchaseItemRepository.countByPurchaseSpec_Id(id) > 0
+                || specificationMappingRepository.countByPurchaseSpec_Id(id) > 0) {
+            throw new BusinessException("进货规格已被使用，不能删除");
         }
-        int deleted = purchaseSpecRepository.deleteByNameAndCategory(spec.getName(), spec.getCategory());
-        if (deleted == 0) {
-            throw new RuntimeException("Purchase spec does not exist");
-        }
+        purchaseSpecRepository.delete(spec);
     }
 
     private boolean isPriceChanged(BigDecimal oldPrice, BigDecimal newPrice) {
@@ -144,11 +130,28 @@ public class PurchaseSpecService {
 
     private String normalizeCategory(String category) {
         if (category == null || category.isBlank()) {
-            return null;
+            throw new BusinessException("类别不能为空");
         }
         String value = category.trim();
         if (!"公".equals(value) && !"母".equals(value)) {
-            throw new BusinessException("Category must be 公 or 母");
+            throw new BusinessException("类别只能是公或母");
+        }
+        return value;
+    }
+
+    private String normalizeSpecRange(String name) {
+        if (name == null || name.isBlank()) {
+            throw new BusinessException("规格范围不能为空");
+        }
+        String value = name.trim();
+        if (!value.matches("\\d+(\\.\\d+)?-\\d+(\\.\\d+)?")) {
+            throw new BusinessException("规格范围格式必须为数字-数字，例如2.3-2.6");
+        }
+        String[] parts = value.split("-");
+        BigDecimal min = new BigDecimal(parts[0]);
+        BigDecimal max = new BigDecimal(parts[1]);
+        if (min.compareTo(max) >= 0) {
+            throw new BusinessException("规格范围左侧数值必须小于右侧数值");
         }
         return value;
     }
@@ -156,14 +159,7 @@ public class PurchaseSpecService {
     private boolean existsByNameAndCategory(String name, String category, UUID excludedId) {
         return purchaseSpecRepository.findAll().stream()
                 .filter(spec -> excludedId == null || !excludedId.equals(spec.getId()))
-                .anyMatch(spec -> name.equals(spec.getName()) && categoryEquals(category, spec.getCategory()));
-    }
-
-    private boolean categoryEquals(String left, String right) {
-        if (left == null) {
-            return right == null;
-        }
-        return left.equals(right);
+                .anyMatch(spec -> name.equals(spec.getName()) && category.equals(spec.getCategory()));
     }
 
     private void savePriceHistory(PurchaseSpec spec, BigDecimal oldPrice, BigDecimal newPrice, String reason) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Layout,
   Menu,
@@ -43,27 +43,21 @@ const MainLayout: React.FC = () => {
   const location = useLocation()
   const { user, logout } = useAuthStore()
   const screens = useBreakpoint()
-
-  // 判断是否为移动端（小于 lg 断点 992px）
   const isMobile = !screens.lg
 
-  // 移动端时自动收起侧边栏
   useEffect(() => {
     if (isMobile) {
       setCollapsed(true)
     }
   }, [isMobile])
 
-  // 获取当前选中的菜单键
   const getSelectedKeys = () => {
-    const path = location.pathname
-    return [path]
+    return [location.pathname]
   }
 
-  // 获取展开的子菜单键
   const getOpenKeys = () => {
     const path = location.pathname
-    if (['/purchase-spec', '/platform-spec', '/specification-mapping'].includes(path)) {
+    if (['/purchase-spec', '/platform-spec', '/platform-package', '/specification-mapping'].includes(path)) {
       return ['spec']
     }
     if (['/api-config', '/scheduled-task'].includes(path)) {
@@ -122,6 +116,11 @@ const MainLayout: React.FC = () => {
           label: '平台规格',
         },
         {
+          key: '/platform-package',
+          icon: <AppstoreOutlined />,
+          label: '平台套餐',
+        },
+        {
           key: '/specification-mapping',
           icon: <LinkOutlined />,
           label: '规格映射',
@@ -161,22 +160,15 @@ const MainLayout: React.FC = () => {
     },
   ]
 
-  // 菜单点击处理
   const handleMenuClick = (key: string) => {
-    console.log('[Menu Click] key:', key)
-    // 只处理实际路径（以 / 开头的 key），忽略父菜单项
     if (key.startsWith('/')) {
-      console.log('[Menu Click] navigating to:', key)
       navigate(key)
       if (isMobile) {
         setDrawerVisible(false)
       }
-    } else {
-      console.log('[Menu Click] ignored (not a path)')
     }
   }
 
-  // 侧边栏菜单内容（用于 Sider 和 Drawer）
   const siderContent = (
     <>
       <div
@@ -184,7 +176,7 @@ const MainLayout: React.FC = () => {
           height: 64,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed && !isMobile ? 'center' : 'center',
+          justifyContent: 'center',
           borderBottom: '1px solid #f0f0f0',
         }}
       >
@@ -197,7 +189,7 @@ const MainLayout: React.FC = () => {
             textOverflow: 'ellipsis',
           }}
         >
-          {collapsed && !isMobile ? '工作站' : '工作站'}
+          工作站
         </Title>
       </div>
       <Menu
@@ -214,7 +206,6 @@ const MainLayout: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* 桌面端：固定侧边栏 */}
       {!isMobile && (
         <Sider
           trigger={null}
@@ -236,7 +227,6 @@ const MainLayout: React.FC = () => {
         </Sider>
       )}
 
-      {/* 移动端：抽屉式侧边栏 */}
       {isMobile && (
         <Drawer
           placement="left"
@@ -272,7 +262,6 @@ const MainLayout: React.FC = () => {
             zIndex: 99,
           }}
         >
-          {/* 移动端显示菜单按钮，桌面端显示折叠按钮 */}
           {isMobile ? (
             <Button
               type="text"

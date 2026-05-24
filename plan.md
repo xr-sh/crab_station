@@ -404,3 +404,142 @@
 8. 清理 CORS、前端日志和 token 工具。
 9. 采购明细 LAZY 化。
 10. 数据库迁移和自动化测试。
+
+## 9. P0：统一修复 UUID 字段映射与查询问题
+
+问题：
+- 多个模块出现 `findById`、派生查询、JPQL bulk delete、native UUID 字符串查询无法命中已有数据的问题。
+- 已确认平台套餐删除中，前端传入 ID 正确，`findAll()` 读取实体后用 Java UUID 比较可以命中，但 UUID 参数查询和删除影响行数为 0。
+- 当前平台规格、规格映射、平台套餐已加入局部 fallback，能临时维持业务，但会增加维护风险。
+
+计划：
+1. 盘点所有 UUID 主键和外键字段的数据库真实类型，包括 `platform_specs`、`purchase_specs`、`specification_mappings`、`platform_packages`、`platform_package_items`、`platform_package_price_rules`。
+2. 确认 Hibernate 当前对 `java.util.UUID` 的绑定方式，以及 MySQL 表字段是 `CHAR(36)`、`VARCHAR(36)`、`BINARY(16)` 还是其他类型。
+3. 选择统一方案：
+   - 方案 A：数据库统一使用 `CHAR(36)` / `VARCHAR(36)`，实体字段明确按字符串 UUID 映射。
+   - 方案 B：数据库统一使用 `BINARY(16)`，实体字段明确使用 Hibernate UUID binary 映射。
+4. 编写迁移脚本，统一主表和外键表字段类型，并验证外键数据一致。
+5. 移除业务层临时 fallback：
+   - `findAll()` 后 Java UUID 比较。
+   - `name + createdAt` 删除兜底。
+   - 其他为了规避 UUID 查询失败加入的特殊逻辑。
+6. 恢复 repository 正常查询和删除方式：
+   - `findById`
+   - 派生查询
+   - 标准 JPA 删除或明确的 bulk delete。
+7. 增加最小验证用例或手工验证矩阵，覆盖创建、详情、编辑、删除、关联查询。
+
+验收：
+- 所有 UUID 主键表通过 `findById` 能稳定查到已存在数据。
+- 所有 UUID 外键派生查询能稳定返回关联明细。
+- 平台套餐删除不再依赖 `name + createdAt` fallback。
+- 规格映射和平台套餐创建不再依赖 `findAll()` UUID 比较 fallback。
+- 后端 `mvn -DskipTests package` 通过；条件允许时 `mvn test` 通过。
+
+## 10. UUID 问题整体治理方案
+
+### 背景
+
+当前项目的 UUID 问题不是单一接口异常，而是贯穿了主表、外键表、Repository 查询、DTO 转换和局部删除逻辑。已确认的现象包括：
+- `findById` 对某些 UUID 记录失效，但 `findAll()` 读出的 Java 对象可以匹配。
+- 派生查询和 JPQL/native 删除对同一批 UUID 记录影响行数为 0。
+- 列表/详情 DTO 在关联加载失败时会抛错或返回占位文本。
+- 平台套餐、平台规格、规格映射、采购规格、采购记录都受到不同程度影响。
+
+项目当前是测试数据阶段，且你已确认相关表可以删除重建，因此优先采用“清表重建 + 统一映射 + 去除 fallback”的路线，而不是继续堆业务兜底。
+
+### 目标
+
+1. 统一所有 UUID 主键和外键的数据库类型与实体映射。
+2. 去掉 `findAll()` UUID 比较、`name + createdAt` 删除兜底等临时逻辑。
+3. 让平台规格、平台套餐、规格映射、采购规格、采购记录在标准 JPA 路径下稳定工作。
+4. 让列表、详情、编辑、删除、关联查询都不再依赖特殊 fallback。
+5. 保持前端不改或少改，优先通过后端和数据库统一修复。
+
+### 范围清单
+
+需要重点治理的表和模块：
+- `platform_specs`
+- `platform_packages`
+- `platform_package_items`
+- `platform_package_price_rules`
+- `purchase_specs`
+- `purchase_spec_price_history`
+- `purchase_records`
+- `purchase_items`
+- `specification_mappings`
+- 相关 Repository、Service、DTO 转换逻辑
+
+### 调研结论
+
+1. 平台套餐目前已经确认：
+   - 创建请求里的 `selections` 正常。
+   - `specCount` 可以按 `selections.size()` 正确写入。
+   - `items` 的展示字段需要保存快照，不应再依赖 `PlatformSpec` 关联实时加载。
+   - 删除和更新曾多次出现 UUID 绑定失效，只能靠临时 fallback 维持。
+
+2. 平台规格和规格映射链路中，已经出现过：
+   - `findById` 查不到，但 `findAll()` 能查到。
+   - 关联加载时抛 `Unable to find ...`。
+   - 需要 Java 层兜底比较 UUID 才能保持业务流转。
+
+3. 数据库目前处于测试数据阶段，允许重建，这给了我们一次性清理 UUID 映射问题的窗口。
+
+### 推荐方案
+
+#### 方案 A：统一成字符串 UUID
+
+适用于当前项目最小改动和可读性优先的路线。
+- 数据库主键/外键统一使用 `CHAR(36)` 或 `VARCHAR(36)`。
+- 实体字段统一使用 `java.util.UUID`，但明确校准 Hibernate/MySQL 映射。
+- 所有外键列都按字符串 UUID 存储。
+- 优点：人工排查直观，迁移和调试简单。
+- 缺点：空间占用略大。
+
+#### 方案 B：统一成 binary UUID
+
+适用于追求存储和索引效率的路线。
+- 数据库主键/外键统一使用 `BINARY(16)`。
+- 实体字段用明确的 UUID binary 映射。
+- 所有查询、删除、关联都按同一二进制规则执行。
+- 优点：性能更好。
+- 缺点：迁移和排查复杂，当前项目修复成本更高。
+
+#### 建议选择
+
+优先选 **方案 A**。理由：
+- 当前是测试数据阶段，核心目标是先恢复稳定性。
+- 项目现有代码和日志更接近字符串 UUID 思路。
+- 当前业务问题集中在查询/删除命中失败，不是极端性能瓶颈。
+
+### 实施步骤
+
+1. 盘点所有 UUID 相关表的字段类型和外键关系。
+2. 确定主键与外键统一采用的具体类型。
+3. 重建相关表或编写迁移脚本，清理旧测试数据。
+4. 补齐实体映射，保证主键、外键、快照字段一致。
+5. 回收所有临时 fallback：
+   - `findAll()` UUID 比较
+   - `name + createdAt` 删除兜底
+   - DTO 中对缺失关联的特殊替代逻辑
+6. 对平台套餐补齐业务快照字段：
+   - `specCount`
+   - `platform_package_items.platformSpecName`
+   - `platform_package_items.platformSpecCategory`
+7. 对列表/详情/编辑/删除/筛选做逐项验证。
+8. 清理开发记录里的临时诊断日志，保留必要的错误处理。
+
+### 风险点
+
+- 目前平台套餐更新采用了“删除后重建”的短期方案，统一 UUID 修复前这属于临时设计，后续要恢复为真正更新。
+- 旧测试数据如果不清表，容易继续触发历史 UUID 不一致问题。
+- DTO 容错逻辑保留过多会掩盖后续修复效果，需要在统一修复后回收。
+
+### 验收标准
+
+- 平台规格、平台套餐、规格映射、采购相关模块都能通过标准 JPA 查询正常工作。
+- 删除不再需要 `name + createdAt` 兜底。
+- 编辑不再需要删除重建套餐。
+- 列表/详情不再依赖 `findAll()` UUID 比较兜底。
+- 相关前端页面在不改或少改的情况下正常显示。
+- 后端能够在统一数据库类型后通过真实构建验证。

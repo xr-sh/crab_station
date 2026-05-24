@@ -1,6 +1,8 @@
 package com.example.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -20,6 +22,7 @@ public class PurchaseSpec {
 
     @Id
     @Column(name = "id", updatable = false, nullable = false, length = 36)
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id = UUID.randomUUID();
 
     @Column(name = "name", nullable = false, length = 100)

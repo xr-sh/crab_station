@@ -49,27 +49,29 @@ const MappingModal: React.FC<MappingModalProps> = ({
       setPurchaseSpecs(purchaseRes as any)
       setPlatformSpecs(platformRes as any)
     } catch (error: any) {
-      message.error('获取规格列表失败')
+      message.error(error.message || '获取规格列表失败')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (visible) {
-      fetchSpecs()
-      if (mapping) {
-        form.setFieldsValue({
-          category: mapping.category,
-          purchaseSpecId: mapping.purchaseSpecId,
-          platformSpecId: mapping.platformSpecId,
-          status: mapping.status === 1,
-          remark: mapping.remark,
-        })
-      } else {
-        form.resetFields()
-        form.setFieldsValue({ status: true })
-      }
+    if (!visible) {
+      return
+    }
+
+    fetchSpecs()
+    if (mapping) {
+      form.setFieldsValue({
+        category: mapping.category,
+        purchaseSpecId: mapping.purchaseSpecId,
+        platformSpecId: mapping.platformSpecId,
+        status: mapping.status === 1,
+        remark: mapping.remark,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: true })
     }
   }, [visible, mapping, form])
 
@@ -84,8 +86,11 @@ const MappingModal: React.FC<MappingModalProps> = ({
     try {
       const values = await form.validateFields()
       const submitData = {
-        ...values,
+        category: values.category,
+        purchaseSpecId: values.purchaseSpecId,
+        platformSpecId: values.platformSpecId,
         status: values.status ? 1 : 0,
+        remark: values.remark,
       }
 
       if (isEditing) {

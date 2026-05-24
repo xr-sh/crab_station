@@ -64,6 +64,16 @@ public class PlatformSpecController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<List<PlatformSpecDTO>> getActivePlatformSpecs(
+            @RequestParam(required = false) String category) {
+        List<PlatformSpec> specs = platformSpecService.getActivePlatformSpecs(category);
+        List<PlatformSpecDTO> dtos = specs.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PlatformSpecDTO> getPlatformSpecById(@PathVariable UUID id) {
         PlatformSpec spec = platformSpecService.getPlatformSpecById(id);
