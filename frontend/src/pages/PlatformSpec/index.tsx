@@ -19,6 +19,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { platformSpecApi, PlatformSpec } from '../../api/platformSpec'
+import { withTablePagination } from '../../utils/tablePagination'
 import PlatformSpecModal from './components/PlatformSpecModal'
 
 const { Title } = Typography
@@ -227,7 +228,7 @@ const PlatformSpecPage: React.FC = () => {
           dataSource={specs}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

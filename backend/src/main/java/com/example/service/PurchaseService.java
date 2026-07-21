@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.dto.CreatePurchaseItemRequest;
 import com.example.dto.CreatePurchaseRecordRequest;
+import com.example.dto.PurchaseStatisticsDTO;
 import com.example.dto.UpdatePurchaseItemRequest;
 import com.example.dto.UpdatePurchaseRecordRequest;
 import com.example.entity.PurchaseItem;
@@ -31,6 +32,17 @@ public class PurchaseService {
     @Transactional(readOnly = true)
     public Page<PurchaseRecord> getPurchaseRecords(String supplier, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return purchaseRecordRepository.findByFilters(supplier, startDate, endDate, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseStatisticsDTO getPurchaseStatistics(String supplier, LocalDate startDate, LocalDate endDate) {
+        Object[] values = unwrapSingleRow(purchaseRecordRepository.sumByFilters(supplier, startDate, endDate));
+
+        return PurchaseStatisticsDTO.builder()
+                .totalCount(toLong(values, 0))
+                .totalWeight(toBigDecimal(values, 1))
+                .totalAmount(toBigDecimal(values, 2))
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -140,5 +152,35 @@ public class PurchaseService {
     }
 
     private record Totals(BigDecimal totalWeight, BigDecimal totalAmount) {
+    }
+
+    private BigDecimal toBigDecimal(Object[] values, int index) {
+        if (values == null || values.length <= index || values[index] == null) {
+            return BigDecimal.ZERO;
+        }
+        if (values[index] instanceof BigDecimal value) {
+            return value;
+        }
+        if (values[index] instanceof Number value) {
+            return BigDecimal.valueOf(value.doubleValue());
+        }
+        return new BigDecimal(values[index].toString());
+    }
+
+    private long toLong(Object[] values, int index) {
+        if (values == null || values.length <= index || values[index] == null) {
+            return 0L;
+        }
+        if (values[index] instanceof Number value) {
+            return value.longValue();
+        }
+        return Long.parseLong(values[index].toString());
+    }
+
+    private Object[] unwrapSingleRow(Object[] values) {
+        if (values != null && values.length == 1 && values[0] instanceof Object[] row) {
+            return row;
+        }
+        return values;
     }
 }

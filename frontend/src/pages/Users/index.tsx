@@ -19,6 +19,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import { userApi, User } from '../../api/users'
+import { withTablePagination } from '../../utils/tablePagination'
 import UserModal from './components/UserModal'
 
 const { Title } = Typography
@@ -225,7 +226,7 @@ const Users: React.FC = () => {
           dataSource={users}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

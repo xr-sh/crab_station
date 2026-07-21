@@ -35,12 +35,13 @@ public class FinanceController {
             @RequestParam(defaultValue = "recordDate") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection,
             @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         PageRequest pageRequest = PageRequestUtils.of(page, size, sortBy, sortDirection, ALLOWED_SORT_FIELDS);
 
-        Page<FinanceRecord> recordPage = financeRecordService.getFinanceRecords(type, startDate, endDate, pageRequest);
+        Page<FinanceRecord> recordPage = financeRecordService.getFinanceRecords(type, keyword, startDate, endDate, pageRequest);
 
         PageResponse<FinanceRecordDTO> response = PageResponse.<FinanceRecordDTO>builder()
                 .content(recordPage.getContent().stream()
@@ -55,6 +56,17 @@ public class FinanceController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<FinanceStatisticsDTO> getFinanceStatistics(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        FinanceStatisticsDTO statistics = financeRecordService.getFinanceStatistics(type, keyword, startDate, endDate);
+        return ResponseEntity.ok(statistics);
     }
 
     @GetMapping("/{id}")

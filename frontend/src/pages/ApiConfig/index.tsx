@@ -19,6 +19,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import { apiConfigApi, ApiConfig as ApiConfigType } from '../../api/apiConfig'
+import { withTablePagination } from '../../utils/tablePagination'
 import ApiConfigModal from './components/ApiConfigModal'
 
 const { Title } = Typography
@@ -239,7 +240,7 @@ const ApiConfigPage: React.FC = () => {
           dataSource={configs}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

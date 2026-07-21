@@ -145,6 +145,7 @@ Frontend UX:
 
 - Follow existing Ant Design patterns.
 - Keep business pages as usable tables/forms, not marketing screens.
+- Use `withTablePagination` from `frontend/src/utils/tablePagination.ts` for paginated Ant Design tables by default, so users can choose page size consistently.
 - Avoid nested cards and decorative-heavy layouts.
 - Keep mobile layout functional.
 - Remove production-useless debug logs.

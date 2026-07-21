@@ -22,6 +22,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons'
 import { scheduledTaskApi, ScheduledTask as ScheduledTaskType } from '../../api/scheduledTask'
+import { withTablePagination } from '../../utils/tablePagination'
 import ScheduledTaskModal from './components/ScheduledTaskModal'
 
 const { Title } = Typography
@@ -316,7 +317,7 @@ const ScheduledTaskPage: React.FC = () => {
           dataSource={tasks}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

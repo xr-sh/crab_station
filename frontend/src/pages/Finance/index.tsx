@@ -7,6 +7,7 @@ import {
   Popconfirm,
   message,
   Card,
+  Input,
   Typography,
   DatePicker,
   Select,
@@ -24,6 +25,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { financeApi, FinanceRecord } from '../../api/finance'
+import { withTablePagination } from '../../utils/tablePagination'
 import FinanceModal from './components/FinanceModal'
 
 const { Title } = Typography
@@ -41,9 +43,11 @@ const Finance: React.FC = () => {
   })
   const [filters, setFilters] = useState({
     type: undefined as string | undefined,
+    keyword: undefined as string | undefined,
     startDate: undefined as string | undefined,
     endDate: undefined as string | undefined,
   })
+  const [keywordInput, setKeywordInput] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FinanceRecord | null>(null)
   const [statistics, setStatistics] = useState({
@@ -51,6 +55,7 @@ const Finance: React.FC = () => {
     expense: 0,
     balance: INITIAL_BALANCE,
   })
+  const [statisticsLoading, setStatisticsLoading] = useState(false)
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -63,6 +68,7 @@ const Finance: React.FC = () => {
         sortBy: 'recordDate',
         sortDirection: 'DESC',
         type: filters.type,
+        keyword: filters.keyword,
         startDate: filters.startDate,
         endDate: filters.endDate,
       }) as any
@@ -72,9 +78,6 @@ const Finance: React.FC = () => {
         pageSize: size,
         total: res.totalElements,
       })
-      
-      // 计算统计
-      calculateStatistics(res.content)
     } catch (error: any) {
       message.error(error.message || '获取财务记录失败')
     } finally {
@@ -82,22 +85,26 @@ const Finance: React.FC = () => {
     }
   }
 
-  const calculateStatistics = (data: FinanceRecord[]) => {
-    const income = data
-      .filter(r => r.type === '收入')
-      .reduce((sum, r) => sum + r.amount, 0)
-    const expense = data
-      .filter(r => r.type === '支出')
-      .reduce((sum, r) => sum + r.amount, 0)
-    setStatistics({
-      income,
-      expense,
-      balance: INITIAL_BALANCE + income - expense,
-    })
+  const fetchStatistics = async () => {
+    setStatisticsLoading(true)
+    try {
+      const res = await financeApi.getFinanceStatistics({
+        type: filters.type,
+        keyword: filters.keyword,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      }) as any
+      setStatistics(res)
+    } catch (error: any) {
+      message.error(error.message || 'Failed to load finance statistics')
+    } finally {
+      setStatisticsLoading(false)
+    }
   }
 
   useEffect(() => {
     fetchRecords()
+    fetchStatistics()
   }, [filters])
 
   const handleTableChange = (newPagination: any) => {
@@ -124,11 +131,27 @@ const Finance: React.FC = () => {
     }
   }
 
+  const handleKeywordSearch = (value: string) => {
+    const keyword = value.trim()
+    setFilters(prev => ({ ...prev, keyword: keyword || undefined }))
+  }
+
+  const handleResetFilters = () => {
+    setKeywordInput('')
+    setFilters({
+      type: undefined,
+      keyword: undefined,
+      startDate: undefined,
+      endDate: undefined,
+    })
+  }
+
   const handleDelete = async (id: string) => {
     try {
       await financeApi.deleteFinanceRecord(id)
       message.success('删除成功')
       fetchRecords(pagination.current - 1, pagination.pageSize)
+      fetchStatistics()
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
@@ -147,6 +170,7 @@ const Finance: React.FC = () => {
   const handleModalSuccess = () => {
     setModalVisible(false)
     fetchRecords(pagination.current - 1, pagination.pageSize)
+    fetchStatistics()
   }
 
   const columns = [
@@ -228,7 +252,7 @@ const Finance: React.FC = () => {
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="总收入"
               value={statistics.income}
@@ -240,7 +264,7 @@ const Finance: React.FC = () => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="总支出"
               value={statistics.expense}
@@ -252,7 +276,7 @@ const Finance: React.FC = () => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="结余"
               value={statistics.balance}
@@ -288,14 +312,25 @@ const Finance: React.FC = () => {
                 { value: '支出', label: '支出' },
               ]}
             />
+            <Input.Search
+              placeholder="搜索备注关键字"
+              allowClear
+              value={keywordInput}
+              onChange={(event) => {
+                setKeywordInput(event.target.value)
+                if (!event.target.value) {
+                  handleKeywordSearch('')
+                }
+              }}
+              onSearch={handleKeywordSearch}
+              style={{ width: isMobile ? '100%' : 220 }}
+            />
             <RangePicker
               placeholder={['开始日期', '结束日期']}
               onChange={handleDateChange}
               style={{ width: isMobile ? '100%' : 'auto' }}
             />
-            <Button onClick={() => {
-              setFilters({ type: undefined, startDate: undefined, endDate: undefined })
-            }}>
+            <Button onClick={handleResetFilters}>
               重置筛选
             </Button>
           </Space>
@@ -306,7 +341,7 @@ const Finance: React.FC = () => {
           dataSource={records}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

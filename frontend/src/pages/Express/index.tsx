@@ -24,8 +24,9 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { expressApi, ExpressAnalysis, Statistics, EXPRESS_CATEGORIES } from '../../api/express'
-import ImportModal from './components/ImportModal'
 import { getAreaOptionsCached, getFullAddress } from '../../utils/chinaDivision'
+import { withTablePagination } from '../../utils/tablePagination'
+import ImportModal from './components/ImportModal'
 
 const { Title } = Typography
 const { useBreakpoint } = Grid
@@ -379,7 +380,7 @@ const Express: React.FC = () => {
             dataSource={data}
             rowKey="id"
             loading={loading}
-            pagination={pagination}
+            pagination={withTablePagination(pagination)}
             onChange={handleTableChange}
             scroll={{ x: 1200 }}
             size="small"

@@ -23,4 +23,15 @@ public interface PurchaseRecordRepository extends JpaRepository<PurchaseRecord, 
                                        @Param("startDate") LocalDate startDate,
                                        @Param("endDate") LocalDate endDate,
                                        Pageable pageable);
+
+    @Query("SELECT COUNT(p), " +
+           "COALESCE(SUM(p.totalWeight), 0), " +
+           "COALESCE(SUM(p.totalAmount), 0) " +
+           "FROM PurchaseRecord p WHERE " +
+           "(:supplier IS NULL OR p.supplier LIKE %:supplier%) AND " +
+           "(:startDate IS NULL OR p.purchaseDate >= :startDate) AND " +
+           "(:endDate IS NULL OR p.purchaseDate <= :endDate)")
+    Object[] sumByFilters(@Param("supplier") String supplier,
+                          @Param("startDate") LocalDate startDate,
+                          @Param("endDate") LocalDate endDate);
 }

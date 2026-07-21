@@ -33,6 +33,12 @@ export interface PageResponse<T> {
   last: boolean
 }
 
+export interface PurchaseStatistics {
+  totalCount: number
+  totalWeight: number
+  totalAmount: number
+}
+
 export interface CreatePurchaseItemRequest {
   purchaseSpecId: string
   weight: number
@@ -72,6 +78,14 @@ export const purchaseApi = {
     endDate?: string
   }) => {
     return request.get<PageResponse<PurchaseRecord>>('/purchases', { params })
+  },
+
+  getPurchaseStatistics: (params: {
+    supplier?: string
+    startDate?: string
+    endDate?: string
+  }) => {
+    return request.get<PurchaseStatistics>('/purchases/statistics', { params })
   },
 
   // 获取单个进货记录

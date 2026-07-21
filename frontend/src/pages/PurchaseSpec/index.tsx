@@ -21,6 +21,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { purchaseSpecApi, PurchaseSpec, PurchaseSpecPriceHistory } from '../../api/purchaseSpec'
+import { withTablePagination } from '../../utils/tablePagination'
 import PurchaseSpecModal from './components/PurchaseSpecModal'
 
 const { Title } = Typography
@@ -285,7 +286,7 @@ const PurchaseSpecPage: React.FC = () => {
           dataSource={specs}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

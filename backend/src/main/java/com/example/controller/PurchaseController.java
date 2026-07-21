@@ -58,6 +58,16 @@ public class PurchaseController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/statistics")
+    public ResponseEntity<PurchaseStatisticsDTO> getPurchaseStatistics(
+            @RequestParam(required = false) String supplier,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        PurchaseStatisticsDTO statistics = purchaseService.getPurchaseStatistics(supplier, startDate, endDate);
+        return ResponseEntity.ok(statistics);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PurchaseRecordDTO> getPurchaseRecordById(@PathVariable UUID id) {
         PurchaseRecord record = purchaseService.getPurchaseRecordById(id);

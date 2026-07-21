@@ -19,6 +19,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { specificationMappingApi, SpecificationMapping } from '../../api/specificationMapping'
+import { withTablePagination } from '../../utils/tablePagination'
 import MappingModal from './components/MappingModal'
 
 const { Title } = Typography
@@ -243,7 +244,7 @@ const SpecificationMappingPage: React.FC = () => {
           dataSource={mappings}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />

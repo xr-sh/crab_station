@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { purchaseApi, PurchaseRecord } from '../../api/purchase'
+import { withTablePagination } from '../../utils/tablePagination'
 import PurchaseModal from './components/PurchaseModal'
 
 const { Title } = Typography
@@ -51,6 +52,7 @@ const Purchase: React.FC = () => {
     totalWeight: 0,
     totalAmount: 0,
   })
+  const [statisticsLoading, setStatisticsLoading] = useState(false)
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -72,9 +74,6 @@ const Purchase: React.FC = () => {
         pageSize: size,
         total: res.totalElements,
       })
-      
-      // 计算统计
-      calculateStatistics(res.content)
     } catch (error: any) {
       message.error(error.message || '获取进货记录失败')
     } finally {
@@ -82,19 +81,25 @@ const Purchase: React.FC = () => {
     }
   }
 
-  const calculateStatistics = (data: PurchaseRecord[]) => {
-    const totalCount = data.length
-    const totalWeight = data.reduce((sum, r) => sum + (r.totalWeight || 0), 0)
-    const totalAmount = data.reduce((sum, r) => sum + (r.totalAmount || 0), 0)
-    setStatistics({
-      totalCount,
-      totalWeight,
-      totalAmount,
-    })
+  const fetchStatistics = async () => {
+    setStatisticsLoading(true)
+    try {
+      const res = await purchaseApi.getPurchaseStatistics({
+        supplier: filters.supplier || undefined,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      }) as any
+      setStatistics(res)
+    } catch (error: any) {
+      message.error(error.message || 'Failed to load purchase statistics')
+    } finally {
+      setStatisticsLoading(false)
+    }
   }
 
   useEffect(() => {
     fetchRecords()
+    fetchStatistics()
   }, [filters])
 
   const handleTableChange = (newPagination: any) => {
@@ -126,6 +131,7 @@ const Purchase: React.FC = () => {
       await purchaseApi.deletePurchaseRecord(id)
       message.success('删除成功')
       fetchRecords(pagination.current - 1, pagination.pageSize)
+      fetchStatistics()
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
@@ -144,6 +150,7 @@ const Purchase: React.FC = () => {
   const handleModalSuccess = () => {
     setModalVisible(false)
     fetchRecords(pagination.current - 1, pagination.pageSize)
+    fetchStatistics()
   }
 
   const expandedRowRender = (record: PurchaseRecord) => {
@@ -285,7 +292,7 @@ const Purchase: React.FC = () => {
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="进货单数"
               value={statistics.totalCount}
@@ -295,7 +302,7 @@ const Purchase: React.FC = () => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="总重量"
               value={statistics.totalWeight}
@@ -307,7 +314,7 @@ const Purchase: React.FC = () => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card>
+          <Card loading={statisticsLoading}>
             <Statistic
               title="总金额"
               value={statistics.totalAmount}
@@ -357,7 +364,7 @@ const Purchase: React.FC = () => {
           dataSource={records}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           expandable={{
             expandedRowRender,

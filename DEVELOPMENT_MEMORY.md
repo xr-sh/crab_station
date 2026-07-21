@@ -302,3 +302,47 @@
 
 - Set the finance management balance statistic to start from 10000.
 - The displayed balance now calculates as `10000 + income - expense`.
+
+## 2026-05-26 Platform Package Pagination
+
+- Enabled page-size selection on the platform package table pagination.
+- Added page-size options `10 / 20 / 50 / 100` and total-count display.
+- Kept filter reset on the current selected page size instead of reverting to the default size.
+
+## 2026-05-26 Platform Package Average Profit
+
+- Added an average profit statistic to the right side of the platform package table search toolbar.
+- The statistic loads from all platform packages via `/platform-packages/all`, not just the current page.
+- Average profit re-fetches after package create/update, delete, and fixed-cost config changes.
+- Average profit display is formatted to exactly two decimal places.
+- Verified with `npm run build`.
+
+## 2026-05-27 Finance Remark Keyword Search
+
+- Added a finance list `keyword` query parameter for searching the `remark` field.
+- Wired the finance page search input to submit trimmed remark keywords while preserving type and date filters.
+- Blank keyword values are normalized away on the backend.
+
+## 2026-06-08 Finance Full-Result Statistics
+
+- Added `/api/finance/statistics` to aggregate income, expense, and balance across all finance records matching the current filters.
+- Updated the finance page statistic cards to load from the aggregate endpoint instead of the current table page.
+- Kept table pagination scoped to list data only, so changing pages no longer changes the displayed totals.
+- Unwrapped the aggregate query row before converting values to `BigDecimal` to avoid parsing array strings as numbers.
+
+## 2026-06-08 Default Table Page Size Selector
+
+- Added `frontend/src/utils/tablePagination.ts` with shared page-size options and total-count display.
+- Updated all server-paginated main list tables to use `withTablePagination`.
+- Documented that new paginated Ant Design tables should use the shared helper by default.
+
+## 2026-07-21 Purchase Full-Result Statistics
+
+- Added `/api/purchases/statistics` to aggregate purchase count, total weight, and total amount across all purchase records matching the current supplier/date filters.
+- Updated the purchase page statistic cards to load from the aggregate endpoint instead of summing only the current table page.
+- Kept table pagination scoped to list data only, so changing pages no longer changes the displayed purchase totals.
+
+### Verification
+
+- Frontend: `npm run build` passed.
+- Backend: `mvn test` was not run because Maven is unavailable in the current shell.

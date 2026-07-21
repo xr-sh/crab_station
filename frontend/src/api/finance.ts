@@ -20,6 +20,12 @@ export interface PageResponse<T> {
   last: boolean
 }
 
+export interface FinanceStatistics {
+  income: number
+  expense: number
+  balance: number
+}
+
 export interface CreateFinanceRecordRequest {
   recordDate: string
   amount: number
@@ -42,10 +48,20 @@ export const financeApi = {
     sortBy?: string
     sortDirection?: string
     type?: string
+    keyword?: string
     startDate?: string
     endDate?: string
   }) => {
     return request.get<PageResponse<FinanceRecord>>('/finance', { params })
+  },
+
+  getFinanceStatistics: (params: {
+    type?: string
+    keyword?: string
+    startDate?: string
+    endDate?: string
+  }) => {
+    return request.get<FinanceStatistics>('/finance/statistics', { params })
   },
 
   // 获取单个财务记录

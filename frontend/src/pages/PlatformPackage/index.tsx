@@ -10,6 +10,7 @@ import {
   Popconfirm,
   Select,
   Space,
+  Statistic,
   Table,
   Tag,
   Typography,
@@ -22,6 +23,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons'
 import { platformPackageApi, PlatformPackage } from '../../api/platformPackage'
+import { withTablePagination } from '../../utils/tablePagination'
 import PlatformPackageModal from './components/PlatformPackageModal'
 
 const { Title } = Typography
@@ -57,9 +59,22 @@ const calculateProfit = (record: PlatformPackage) => {
   return record.price - totalCost
 }
 
+const calculateAverageProfit = (records: PlatformPackage[]) => {
+  const profits = records
+    .map(calculateProfit)
+    .filter((profit): profit is number => profit !== null)
+
+  if (profits.length === 0) {
+    return null
+  }
+
+  return profits.reduce((sum, profit) => sum + profit, 0) / profits.length
+}
+
 const PlatformPackagePage: React.FC = () => {
   const [packages, setPackages] = useState<PlatformPackage[]>([])
   const [loading, setLoading] = useState(false)
+  const [averageProfit, setAverageProfit] = useState<number | null>(null)
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -101,8 +116,18 @@ const PlatformPackagePage: React.FC = () => {
     }
   }
 
+  const fetchAverageProfit = async () => {
+    try {
+      const res = await platformPackageApi.getAllPlatformPackages() as any
+      setAverageProfit(calculateAverageProfit(res))
+    } catch (error: any) {
+      message.error(error.message || '获取平台套餐平均利润失败')
+    }
+  }
+
   useEffect(() => {
     fetchPackages()
+    fetchAverageProfit()
   }, [])
 
   const handleTableChange = (newPagination: any) => {
@@ -118,7 +143,7 @@ const PlatformPackagePage: React.FC = () => {
       name: '',
       status: undefined,
     })
-    setTimeout(() => fetchPackages(), 0)
+    setTimeout(() => fetchPackages(0, pagination.pageSize), 0)
   }
 
   const handleDelete = async (id: string) => {
@@ -126,6 +151,7 @@ const PlatformPackagePage: React.FC = () => {
       await platformPackageApi.deletePlatformPackage(id)
       message.success('删除成功')
       fetchPackages(pagination.current - 1, pagination.pageSize)
+      fetchAverageProfit()
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
@@ -149,6 +175,7 @@ const PlatformPackagePage: React.FC = () => {
   const handleModalSuccess = () => {
     setModalVisible(false)
     fetchPackages(pagination.current - 1, pagination.pageSize)
+    fetchAverageProfit()
   }
 
   const handleOpenCostConfig = async () => {
@@ -171,6 +198,7 @@ const PlatformPackagePage: React.FC = () => {
       message.success('固定成本配置已保存')
       setCostConfigVisible(false)
       fetchPackages(pagination.current - 1, pagination.pageSize)
+      fetchAverageProfit()
     } catch (error: any) {
       message.error(error.message || '保存固定成本配置失败')
     }
@@ -295,7 +323,16 @@ const PlatformPackagePage: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           <Space wrap direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
             <Input
               placeholder="套餐名称"
@@ -324,6 +361,28 @@ const PlatformPackagePage: React.FC = () => {
               </Button>
             </Space>
           </Space>
+          <div
+            style={{
+              minWidth: isMobile ? '100%' : 180,
+              padding: '8px 12px',
+              border: '1px solid #f0f0f0',
+              borderRadius: 6,
+              background: '#fafafa',
+              textAlign: isMobile ? 'left' : 'right',
+            }}
+          >
+            <Statistic
+              title="平均利润"
+              value={averageProfit ?? undefined}
+              precision={2}
+              valueStyle={{
+                color: averageProfit !== null && averageProfit < 0 ? '#cf1322' : '#3f8600',
+                fontSize: 20,
+              }}
+              prefix="¥"
+              formatter={(value) => value === undefined ? '-' : Number(value).toFixed(2)}
+            />
+          </div>
         </div>
 
         <Table
@@ -331,7 +390,7 @@ const PlatformPackagePage: React.FC = () => {
           dataSource={packages}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={withTablePagination(pagination)}
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
         />
