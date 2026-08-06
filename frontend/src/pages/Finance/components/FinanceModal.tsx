@@ -113,7 +113,7 @@ const FinanceModal: React.FC<FinanceModalProps> = ({
             min={0.01}
             precision={2}
             placeholder="请输入金额"
-            addonAfter="元"
+            addonBefore="¥"
           />
         </Form.Item>
 

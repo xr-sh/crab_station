@@ -27,7 +27,7 @@ const formatPrice = (price: number | null | undefined) => {
   if (price === null || price === undefined) {
     return '-'
   }
-  return price.toFixed(2)
+  return `¥${price.toFixed(2)}`
 }
 
 const PlatformPackageModal: React.FC<PlatformPackageModalProps> = ({
@@ -282,7 +282,7 @@ const PlatformPackageModal: React.FC<PlatformPackageModalProps> = ({
           name="price"
           rules={[{ required: true, message: '请输入价格' }]}
         >
-          <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="请输入价格" />
+          <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="请输入价格" addonBefore="¥" />
         </Form.Item>
       </Form>
     </Modal>

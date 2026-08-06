@@ -28,7 +28,7 @@ const { Title } = Typography
 const { useBreakpoint } = Grid
 
 const formatPrice = (price: number | null | undefined) => {
-  return price != null ? `${Number(price).toFixed(2)}` : '-'
+  return price != null ? `¥${Number(price).toFixed(2)}` : '-'
 }
 
 const PurchaseSpecPage: React.FC = () => {
@@ -142,7 +142,7 @@ const PurchaseSpecPage: React.FC = () => {
       key: 'name',
     },
     {
-      title: '价格(元/斤)',
+      title: '价格(¥/斤)',
       dataIndex: 'price',
       key: 'price',
       render: formatPrice,

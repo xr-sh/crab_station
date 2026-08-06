@@ -284,7 +284,7 @@ const Express: React.FC = () => {
             <Statistic
               title="平均运费"
               value={statistics.averageFee || 0}
-              suffix="元"
+              prefix="¥"
               precision={2}
               valueStyle={{ color: '#52c41a' }}
             />

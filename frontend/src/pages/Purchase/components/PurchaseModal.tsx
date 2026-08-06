@@ -224,7 +224,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
       ),
     },
     {
-      title: '单价(元/斤)',
+      title: '单价(¥/斤)',
       dataIndex: 'unitPrice',
       key: 'unitPrice',
       width: 150,
@@ -234,19 +234,20 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
           min={0.01}
           precision={2}
           placeholder="单价"
+          addonBefore="¥"
           value={items[index]?.unitPrice}
           onChange={(value) => handleItemChange(index, 'unitPrice', value)}
         />
       ),
     },
     {
-      title: '金额(元)',
+      title: '金额(¥)',
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
       render: (_: any, __: any, index: number) => (
         <Text strong style={{ color: '#1890ff' }}>
-          {items[index]?.amount?.toFixed(2) || '0.00'}
+          ¥{items[index]?.amount?.toFixed(2) || '0.00'}
         </Text>
       ),
     },
@@ -338,7 +339,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
                 <Table.Summary.Cell index={3}>
-                  <strong style={{ color: '#1890ff' }}>{calculateTotal().toFixed(2)} 元</strong>
+                  <strong style={{ color: '#1890ff' }}>¥{calculateTotal().toFixed(2)}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={4}>-</Table.Summary.Cell>
               </Table.Summary.Row>

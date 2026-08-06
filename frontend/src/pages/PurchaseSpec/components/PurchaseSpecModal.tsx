@@ -118,7 +118,7 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="价格(元/斤)"
+          label="价格(¥/斤)"
           name="price"
         >
           <InputNumber
@@ -126,6 +126,7 @@ const PurchaseSpecModal: React.FC<PurchaseSpecModalProps> = ({
             precision={2}
             style={{ width: '100%' }}
             placeholder="请输入价格"
+            addonBefore="¥"
           />
         </Form.Item>
 

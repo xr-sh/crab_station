@@ -196,7 +196,7 @@ const Finance: React.FC = () => {
       key: 'amount',
       render: (amount: number, record: FinanceRecord) => (
         <span style={{ color: record.type === '收入' ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
-          {record.type === '收入' ? '+' : '-'}{amount.toFixed(2)}
+          {record.type === '收入' ? '+' : '-'}¥{amount.toFixed(2)}
         </span>
       ),
     },
@@ -258,8 +258,7 @@ const Finance: React.FC = () => {
               value={statistics.income}
               precision={2}
               valueStyle={{ color: '#52c41a' }}
-              prefix={<ArrowUpOutlined />}
-              suffix="元"
+              prefix="¥"
             />
           </Card>
         </Col>
@@ -270,8 +269,7 @@ const Finance: React.FC = () => {
               value={statistics.expense}
               precision={2}
               valueStyle={{ color: '#ff4d4f' }}
-              prefix={<ArrowDownOutlined />}
-              suffix="元"
+              prefix="¥"
             />
           </Card>
         </Col>
@@ -283,7 +281,6 @@ const Finance: React.FC = () => {
               precision={2}
               valueStyle={{ color: statistics.balance >= 0 ? '#52c41a' : '#ff4d4f' }}
               prefix="¥"
-              suffix="元"
             />
           </Card>
         </Col>

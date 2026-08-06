@@ -20,7 +20,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   ShoppingCartOutlined,
-  DollarOutlined,
   ContainerOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -167,18 +166,18 @@ const Purchase: React.FC = () => {
         render: (weight: number) => weight?.toFixed(2),
       },
       {
-        title: '单价(元/斤)',
+        title: '单价(¥/斤)',
         dataIndex: 'unitPrice',
         key: 'unitPrice',
         render: (price: number) => price?.toFixed(2),
       },
       {
-        title: '金额(元)',
+        title: '金额(¥)',
         dataIndex: 'amount',
         key: 'amount',
         render: (amount: number) => (
           <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
-            {amount?.toFixed(2)}
+            ¥{amount?.toFixed(2)}
           </span>
         ),
       },
@@ -201,7 +200,7 @@ const Purchase: React.FC = () => {
               </Table.Summary.Cell>
               <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
               <Table.Summary.Cell index={3}>
-                <strong style={{ color: '#1890ff' }}>{record.totalAmount?.toFixed(2)} 元</strong>
+                <strong style={{ color: '#1890ff' }}>¥{record.totalAmount?.toFixed(2)}</strong>
               </Table.Summary.Cell>
             </Table.Summary.Row>
           </Table.Summary>
@@ -239,11 +238,11 @@ const Purchase: React.FC = () => {
       ),
     },
     {
-      title: '总金额(元)',
+      title: '总金额(¥)',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
       render: (amount: number) => (
-        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{amount?.toFixed(2)}</span>
+        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>¥{amount?.toFixed(2)}</span>
       ),
     },
     {
@@ -319,8 +318,7 @@ const Purchase: React.FC = () => {
               title="总金额"
               value={statistics.totalAmount}
               precision={2}
-              prefix={<DollarOutlined />}
-              suffix="元"
+              prefix="¥"
               valueStyle={{ color: '#cf1322' }}
             />
           </Card>

@@ -33,7 +33,7 @@ const formatPrice = (price: number | null | undefined) => {
   if (price === null || price === undefined) {
     return '-'
   }
-  return price.toFixed(2)
+  return `¥${price.toFixed(2)}`
 }
 
 const calculatePurchaseCost = (record: PlatformPackage) => {
@@ -418,7 +418,8 @@ const PlatformPackagePage: React.FC = () => {
             value={fixedCost}
             onChange={(value) => setFixedCost(value)}
             style={{ width: '100%' }}
-            addonAfter="元/套餐"
+            addonBefore="¥"
+            addonAfter="/套餐"
             placeholder="请输入人工、包装等固定成本"
           />
           <Input.TextArea

@@ -346,3 +346,13 @@
 
 - Frontend: `npm run build` passed.
 - Backend: `mvn test` was not run because Maven is unavailable in the current shell.
+
+## 2026-07-21 RMB Currency Symbol Display
+
+- Replaced frontend currency unit displays from trailing yuan text to the RMB symbol `¥`.
+- Updated finance, purchase, purchase spec, platform package, and express fee displays/forms.
+- Kept non-currency Chinese unit text such as weight and record counts unchanged.
+
+### Verification
+
+- Frontend: `npm run build` passed.
